@@ -2,10 +2,10 @@ from pymongo import MongoClient, UpdateOne
 from pymongo.errors import BulkWriteError
 
 from config import BlockchainETLConfig, TestBlockchainETLConfig
-from src.constants.blockchain_etl_constants import BlockchainETLCollections, BlockchainETLIndexes
-from src.constants.time_constants import TimeConstants
-from src.utils.logger_utils import get_logger
-from src.utils.time_execute_decorator import sync_log_time_exe, TimeExeTag
+from constants.blockchain_etl_constants import BlockchainETLCollections, BlockchainETLIndexes
+from constants.time_constants import TimeConstants
+from utils.logger_utils import get_logger
+from utils.time_execute_decorator import sync_log_time_exe, TimeExeTag
 
 logger = get_logger('Blockchain ETL')
 
