@@ -1,7 +1,7 @@
 import datetime
 import re
 
-from src.utils.logger_utils import get_logger
+from utils.logger_utils import get_logger
 
 logger = get_logger('Format Utils')
 

@@ -1,9 +1,9 @@
 import time
 from functools import wraps
 
-from src.constants.time_constants import SLEEP_DURATION
-from src.utils.logger_utils import get_logger
-from src.utils.time_utils import round_timestamp
+from constants.time_constants import SLEEP_DURATION
+from utils.logger_utils import get_logger
+from utils.time_utils import round_timestamp
 
 logger = get_logger('Repeat handler')
 

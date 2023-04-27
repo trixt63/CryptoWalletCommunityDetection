@@ -1,7 +1,7 @@
 import time
 from itertools import islice
 
-from src.constants.time_constants import TimeConstants
+from constants.time_constants import TimeConstants
 
 
 def filter_none_keys(input_dict: dict):

@@ -1,7 +1,7 @@
 import copy
 import time
 
-from src.utils.logger_utils import get_logger
+from utils.logger_utils import get_logger
 
 _LOGGER = get_logger(__name__)
 

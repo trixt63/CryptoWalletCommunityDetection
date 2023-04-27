@@ -1,7 +1,7 @@
 import time
 from functools import wraps
 
-from src.utils.logger_utils import get_logger
+from utils.logger_utils import get_logger
 
 logger = get_logger('Time Execute')
 

@@ -15,39 +15,25 @@ class MongoDB:
         self.connection_url = connection_url.split('@')[-1]
         self.connection = MongoClient(connection_url)
 
-        self._db = self.connection['TmpWalletDatabase']
-        self.wallet_collection = self._db['wallets']
+        self._db = self.connection['community-detection']
+        self.wallets_col = self._db['wallets']
 
         self._create_index()
 
     def _create_index(self):
-        if 'wallets_number_of_txs_index_1' not in self.wallet_collection.index_information():
-            self.wallet_collection.create_index([('number_of_txs', 1)], name='wallets_number_of_txs_index_1')
+        if 'wallets_number_of_txs_index_1' not in self.wallets_col.index_information():
+            self.wallets_col.create_index([('number_of_txs', 1)], name='wallets_number_of_txs_index_1')
 
-    def get_wallets(self, limit=50000):
-        cursor = self.wallet_collection.find({}).sort('number_of_txs', pymongo.DESCENDING).limit(limit)
-        return list(cursor)
-
-    def update_wallets(self, wallets):
+    def update_wallets(self, wallets: list):
         try:
-            data = []
-            for doc in wallets:
-                data.append(UpdateOne({'_id': doc['_id']}, {'$set': doc}, upsert=True))
-            self.wallet_collection.bulk_write(data)
+            wallets_data = []
+            for wallet in wallets:
+                wallet_dict = wallet.to_dict()
+                wallet_dict['_id'] = f"{wallet_dict['chainId']}_{wallet_dict['address']}"
+                tags = wallet_dict.pop('tags')
+                wallets_data.append(UpdateOne({'_id': wallet_dict['_id']},
+                                              {'$set': wallet_dict, '$addToSet': {"tags": {'$each': tags}}},
+                                              upsert=True))
+            self.wallets_col.bulk_write(wallets_data)
         except Exception as ex:
             logger.exception(ex)
-
-    def remove_wallets(self, keys):
-        try:
-            filter_ = {'_id': {'$in': keys}}
-            self.wallet_collection.delete_many(filter_)
-        except Exception as ex:
-            logger.exception(ex)
-
-    def get_all_wallets(self, skip=0, limit=None):
-        cursor = self.wallet_collection.find().sort('number_of_txs', pymongo.DESCENDING).skip(skip).limit(limit)
-        return cursor
-
-    def get_wallets_by_flag(self, flag_idx):
-        cursor = self.wallet_collection.find({'flagged': flag_idx})
-        return cursor

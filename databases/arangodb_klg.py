@@ -61,104 +61,23 @@ class ArangoDB:
             database.create_collection(collection_name, shard_count=20, edge=edge)
         return database.collection(collection_name)
 
-    def _create_index(self):
-        # self._smart_contracts_col.add_persistent_index(fields=['tags'], name=ArangoDBIndex.smart_contract_tags)
-        self._smart_contracts_col.add_hash_index(fields=['address', 'chainId'],
-                                                 name=ArangoDBIndex.smart_contract_address)
-        self._smart_contracts_col.add_hash_index(fields=['chainId'], name=ArangoDBIndex.smart_contract_chain)
-        self._relationships_col.add_hash_index(fields=['type'], name=ArangoDBIndex.relationship_type)
-
-        self._call_smart_contracts_col.add_ttl_index(fields=['lastCalledAt'], expiry_time=TimeConstants.DAYS_30,
-                                                     name=ArangoDBIndex.relationship_ttl)
-
-    def get_tokens(self, projection=None):
+    def get_lending_wallet_addresses(self, chain_id: str, timestamp: int = None):
         try:
-            projection_statement = self.get_projection_statement(projection)
-
-            query = f"""
-                FOR doc IN {ArangoDBCollections.smart_contracts}
-                FILTER doc.idCoingecko
-                RETURN {projection_statement}
-            """
-            cursor = self._db.aql.execute(query, batch_size=1000)
-            return cursor
-        except Exception as ex:
-            logger.exception(ex)
-        return None
-
-    def get_price(self, token, chain_id):
-        key = f"{chain_id}_{token}"
-        try:
-            query = f"""
-                FOR doc IN {ArangoDBCollections.smart_contracts}
-                FILTER doc._key=='{key}'
-                limit 1
-                RETURN doc.price
-            """
-            cursor = list(self._db.aql.execute(query, batch_size=1000))
-            if cursor:
-                return cursor[0]
+            if timestamp:
+                query = f"""
+                    for w in wallets
+                    filter w.chainId == '{chain_id}' and
+                    w.depositInUSD > 0 or w.borrowInUSD > 0 
+                    and w.lastUpdatedAt > {timestamp}
+                    return w.address
+                """
             else:
-                return 0
-        except Exception as ex:
-            logger.exception(ex)
-        return None
-
-    def get_all_contract(self, chain_id, limit=1000):
-        query = f"""
-            FOR doc IN {ArangoDBCollections.smart_contracts}
-            FILTER doc.chainId == '{chain_id}'
-            FILTER NOT doc.checkTag
-            LIMIT {limit}
-            RETURN {{
-                address: doc.address,
-                chainId: doc.chainId,
-                tags: doc.tags
-            }}
-        """
-        cursor = self._db.aql.execute(query, batch_size=1000)
-        return cursor
-
-    def get_new_contracts(self, chain_id: str = None):
-        try:
-            filter_ = 'FILTER doc.isNew == true'
-            if chain_id is not None:
-                filter_ += f' AND doc.chainId == "{chain_id}"'
-
-            query = f"""
-                FOR doc IN {ArangoDBCollections.smart_contracts}
-                {filter_}
-                RETURN doc.address
-            """
-            cursor = self._db.aql.execute(query, batch_size=1000)
-            return cursor
-        except Exception as ex:
-            logger.exception(ex)
-        return None
-
-    def get_top_tokens(self, chain_id: str, limit=200):
-        try:
-            query = f"""
-                FOR s IN {ArangoDBCollections.smart_contracts}
-                FILTER s.tags.token==1 and s.chainId=='{chain_id}'
-                sort s.marketCap desc
-                limit {limit}
-                return s
-            """
-            cursor = self._db.aql.execute(query, batch_size=1000)
-            return cursor
-        except Exception as ex:
-            logger.exception(ex)
-        return None
-
-    def get_lending_wallet_addresses(self, chain_id: str):
-        try:
-            query = f"""
-                for w in wallets
-                filter w.chainId == {chain_id}
-                w.depositInUSD > 0 or w.borrowInUSD > 0 
-                return w.address
-            """
+                query = f"""
+                    for w in wallets
+                    filter w.chainId == '{chain_id}' and
+                    w.depositInUSD > 0 or w.borrowInUSD > 0 
+                    return w.address
+                """
             cursor = self._db.aql.execute(query, batch_size=1000)
             return cursor
         except Exception as ex:
