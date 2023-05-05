@@ -69,7 +69,6 @@ class ArangoDB:
                     filter w.chainId == '{chain_id}' and
                     w.depositInUSD > 0 or w.borrowInUSD > 0 
                     and w.lastUpdatedAt > {timestamp}
-                    limit 10000
                     return {{
                         'address': w.address,
                         'lendings': w.lendings
@@ -80,7 +79,6 @@ class ArangoDB:
                     for w in wallets
                     filter w.chainId == '{chain_id}' and
                     w.depositInUSD > 0 or w.borrowInUSD > 0 
-                    limit 10000
                     return {{
                         'address': w.address,
                         'lendings': w.lendings
