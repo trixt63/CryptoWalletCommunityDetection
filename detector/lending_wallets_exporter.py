@@ -11,7 +11,7 @@ logger = get_logger('Lending Wallets Exporter')
 class LendingWalletsExporter:
     def __init__(self, chain_id):
         self.chain_id = chain_id
-        self._klg =  ArangoDB()
+        self._klg = ArangoDB()
         self._mongodb = MongoDB()
         self._lending_wallets = list()
 
@@ -21,11 +21,19 @@ class LendingWalletsExporter:
 
     def _get_lending_wallets(self):
         logger.info('Getting lending wallet addresses')
-        _lending_wallet_addresses = self._klg.get_lending_wallet_addresses(self.chain_id, timestamp=1682467200)
-        for addr in _lending_wallet_addresses:
-            new_lending_wallet = Wallet(chain_id=self.chain_id, address=addr)
-            new_lending_wallet.add_tags(WalletTags.lending_wallet)
+        wallet_addr_and_lendings = self._klg.get_wallet_addresses_and_lendings(self.chain_id, timestamp=1682467200)
+        for _data in wallet_addr_and_lendings:
+            wallet_address = _data['address']
+
+            lending_names = [lending['name'] for lending in _data['lendings'].values()]
+            lending_names = list(set(lending_names))
+
+            new_lending_wallet = Wallet(chain_id=self.chain_id, address=wallet_address)
+            new_lending_wallet.add_tags(WalletTags.lending_wallet, lending_names)
+            new_lending_wallet.lendings = lending_names
+
             self._lending_wallets.append(new_lending_wallet)
+
         logger.info(f"Got {len(self._lending_wallets)} lending wallet addresses")
 
     def _export_lending_wallets(self):

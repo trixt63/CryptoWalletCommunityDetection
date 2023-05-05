@@ -48,6 +48,7 @@ class BlockchainETLConfig:
 
 class MongoDBConfig:
     CONNECTION_URL = os.getenv("MONGODB_CONNECTION_URL")
+    DATABASE = os.getenv("MONGODB_DATABASE")
 
 # class MongoLendingConfig:
 #     HOST = os.getenv("MONGO_LENDING_HOST")

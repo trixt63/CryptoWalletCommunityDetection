@@ -61,7 +61,7 @@ class ArangoDB:
             database.create_collection(collection_name, shard_count=20, edge=edge)
         return database.collection(collection_name)
 
-    def get_lending_wallet_addresses(self, chain_id: str, timestamp: int = None):
+    def get_wallet_addresses_and_lendings(self, chain_id: str, timestamp: int = None):
         try:
             if timestamp:
                 query = f"""
@@ -69,14 +69,22 @@ class ArangoDB:
                     filter w.chainId == '{chain_id}' and
                     w.depositInUSD > 0 or w.borrowInUSD > 0 
                     and w.lastUpdatedAt > {timestamp}
-                    return w.address
+                    limit 100
+                    return {{
+                        'address': w.address,
+                        'lendings': w.lendings
+                    }}
                 """
             else:
                 query = f"""
                     for w in wallets
                     filter w.chainId == '{chain_id}' and
                     w.depositInUSD > 0 or w.borrowInUSD > 0 
-                    return w.address
+                    limit 100
+                    return {{
+                        'address': w.address,
+                        'lendings': w.lendings
+                    }}
                 """
             cursor = self._db.aql.execute(query, batch_size=1000)
             return cursor

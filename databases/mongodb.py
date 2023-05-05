@@ -15,7 +15,7 @@ class MongoDB:
         self.connection_url = connection_url.split('@')[-1]
         self.connection = MongoClient(connection_url)
 
-        self._db = self.connection['community-detection']
+        self._db = self.connection[MongoDBConfig.DATABASE]
         self.wallets_col = self._db['wallets']
 
         self._create_index()
