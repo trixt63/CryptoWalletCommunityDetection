@@ -9,7 +9,7 @@ class Wallet:
 
         self.lendings = list()
 
-    def add_tags(self, new_tag: str, names: list):
+    def add_tags(self, new_tag: str):
         if new_tag not in WalletTags.all_wallet_tags:
             print(f"{new_tag} not in supported wallet tags")
             return None

@@ -1,4 +1,3 @@
-import pymongo
 from pymongo import MongoClient, UpdateOne
 
 from config import MongoDBConfig
