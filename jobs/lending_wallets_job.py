@@ -8,7 +8,7 @@ from utils.logger_utils import get_logger
 logger = get_logger('Lending Wallets Exporter')
 
 
-class LendingWalletsExporter:
+class LendingWalletsJob:
     def __init__(self, chain_id):
         self.chain_id = chain_id
         self._klg = ArangoDB()

@@ -3,7 +3,7 @@ import click
 from constants.network_constants import Chains
 from constants.time_constants import TimeConstants
 
-from detector.lending_wallets_exporter import LendingWalletsExporter
+from jobs.lending_wallets_job import LendingWalletsJob
 
 
 @click.command(context_settings=dict(help_option_names=['-h', '--help']))
@@ -15,5 +15,5 @@ def lending_wallets(chain, interval):
         raise click.BadOptionUsage("--chain", f"Chain {chain_name} is not support.\n"
                                               f"Supported chains: {list(Chains.names.values())}")
     chain_id = Chains.mapping[chain_name]
-    job = LendingWalletsExporter(chain_id=chain_id)
+    job = LendingWalletsJob(chain_id=chain_id)
     job.run()
