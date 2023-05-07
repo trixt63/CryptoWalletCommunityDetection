@@ -1,4 +1,3 @@
-import pymongo
 from pymongo import MongoClient, UpdateOne
 
 from config import MongoDBConfig
@@ -16,7 +15,7 @@ class MongoDB:
         self.connection = MongoClient(connection_url)
 
         self._db = self.connection[MongoDBConfig.DATABASE]
-        self.wallets_col = self._db['wallets']
+        self.wallets_col = self._db['cryptowallets']
 
         self._create_index()
 
@@ -29,7 +28,7 @@ class MongoDB:
             wallets_data = []
             for wallet in wallets:
                 wallet_dict = wallet.to_dict()
-                wallet_dict['_id'] = f"{wallet_dict['chainId']}_{wallet_dict['address']}"
+                wallet_dict['_id'] = wallet.address
                 tags = wallet_dict.pop('tags')
                 wallets_data.append(UpdateOne({'_id': wallet_dict['_id']},
                                               {'$set': wallet_dict, '$addToSet': {"tags": {'$each': tags}}},
