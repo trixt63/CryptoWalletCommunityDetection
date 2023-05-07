@@ -5,9 +5,12 @@ from multithread_processing.base_job import BaseJob
 
 from constants.tag_constants import WalletTags
 from databases.blockchain_etl import BlockchainETL
-# from databases.postgresql import PostgresDB
+from databases.arangodb_klg import ArangoDB
+from databases.postgresql import PostgresDB
+from databases.mongodb import MongoDB
 # from exporters.arangodb_exporter import ArangoDBExporter
 from models.blocks import Blocks
+from models.wallet import Wallet, WalletTags
 from utils.logger_utils import get_logger
 
 logger = get_logger('Exchange Deposit Wallet Job')
@@ -15,12 +18,17 @@ logger = get_logger('Exchange Deposit Wallet Job')
 
 class ExchangeDepositWalletsJob(BaseJob):
     def __init__(
-            self, _db: PostgresDB, _blockchain_etl: BlockchainETL, _exporter: ArangoDBExporter, exchange_wallets, chain_id,
-            start_timestamp, end_timestamp, period, batch_size, max_workers, sources=None
+            self,
+            _db: PostgresDB,
+            _blockchain_etl: BlockchainETL,
+            klg: ArangoDB,
+            exchange_wallets, chain_id, start_timestamp, end_timestamp, period, batch_size, max_workers, sources=None
     ):
         self._db = _db
         self._blockchain_etl = _blockchain_etl
-        self._exporter = _exporter
+        self._kgl = klg
+
+        self._exporter = MongoDB()
 
         self.exchange_wallets = exchange_wallets
         self.chain_id = chain_id
@@ -66,17 +74,17 @@ class ExchangeDepositWalletsJob(BaseJob):
                 if from_address not in self.exchange_wallets:
                     result[from_address] = True
 
-        if 'mongo' in self.sources:
-            # Get transaction to exchange wallets
-            docs = self._blockchain_etl.get_transactions_to_addresses(
-                self.exchange_wallets,
-                block_range[start_timestamp],
-                block_range[end_timestamp]
-            )
-            for item in docs:
-                from_address = item['from_address']
-                if from_address not in self.exchange_wallets:
-                    result[from_address] = True
+        # if 'mongo' in self.sources:
+        #     # Get transaction to exchange wallets
+        #     docs = self._blockchain_etl.get_transactions_to_addresses(
+        #         self.exchange_wallets,
+        #         block_range[start_timestamp],
+        #         block_range[end_timestamp]
+        #     )
+        #     for item in docs:
+        #         from_address = item['from_address']
+        #         if from_address not in self.exchange_wallets:
+        #             result[from_address] = True
 
         self._combine(result)
         logger.info(f'Combine {len(self._deposit_wallets)} wallet addresses, took {round(time.time() - start_time)}s')
@@ -87,11 +95,10 @@ class ExchangeDepositWalletsJob(BaseJob):
 
     def _export(self):
         # Export exchange deposit wallets with tag
-        data = []
+        wallets = []
         for address in self._deposit_wallets:
-            data.append({
-                'address': address,
-                'chainId': self.chain_id,
-                'tags': {WalletTags.centralized_exchange_deposit_wallet: True}
-            })
-        self._exporter.export_wallets(data)
+            new_wallet = Wallet(address)
+            new_wallet.add_tags(WalletTags.centralized_exchange_deposit_wallet)
+            wallets.append(new_wallet)
+
+        self._exporter.update_wallets(wallets)

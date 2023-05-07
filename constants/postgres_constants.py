@@ -2,7 +2,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, Integer, String, Numeric, PrimaryKeyConstraint, UniqueConstraint, Index, MetaData
 from config import PostgresDBConfig
 
-from src.constants.arangodb_constants import WalletLabels
+from constants.arangodb_constants import WalletLabels
 
 metadata_obj = MetaData(schema=PostgresDBConfig.SCHEMA)
 Base = declarative_base(metadata=metadata_obj)
@@ -53,6 +53,17 @@ class NewTargetWallet(Base):
     __tablename__ = 'new_target_wallet'
     address = Column(String, nullable=False)
     __table_args__ = (UniqueConstraint('address', name='uq_new_target_wallet_address'), PrimaryKeyConstraint('address'))
+
+
+class AmountInOut(Base):
+    __tablename__ = 'amount_in_out'
+    address = Column(String, nullable=False)
+    token = Column(String, nullable=False)
+    value = Column(Numeric)
+    income = Column(Numeric)
+    number_tx = Column(Numeric)
+    __table_args__ = (PrimaryKeyConstraint('address'),)
+
 
 WALLET_TABLES = {
     # Give me a label, and I'll give you the corresponding Table

@@ -3,11 +3,11 @@ from constants.tag_constants import WalletTags
 
 class Wallet:
     def __init__(self, address):
-        # self.chain_id = chain_id
         self.address = address
         self.tags = list()
 
         self.lendings = list()
+        self.exchange_deposits = list()
 
     def add_tags(self, new_tag: str):
         if new_tag not in WalletTags.all_wallet_tags:
@@ -22,7 +22,11 @@ class Wallet:
             'address': self.address,
             'tags': self.tags
         }
+
         if len(self.lendings):
             returned_dict['lendings'] = self.lendings
+
+        if len(self.exchange_deposits):
+            returned_dict['exchangeDeposits'] = self.exchange_deposits
 
         return returned_dict
