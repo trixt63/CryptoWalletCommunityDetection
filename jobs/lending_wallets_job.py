@@ -29,7 +29,7 @@ class LendingWalletsJob:
     def _get_and_export_lending_wallets(self):
         logger.info('Getting lending wallet addresses from KLG')
         current_batch_id = self._klg.get_multichain_wallets_current_batch_idx()
-        for flagged in range(current_batch_id-100, current_batch_id+1):
+        for flagged in range(1, current_batch_id+1):
             batch_lending_wallets = []
             _cursor = self._klg.get_wallet_addresses_and_lendings(flagged)
             data = list(_cursor)
