@@ -14,8 +14,7 @@ class Wallet:
             print(f"{new_tag} not in supported wallet tags")
             return None
         if new_tag not in self.tags:
-            self.tags = list()
-        self.tags.append(new_tag)
+            self.tags.append(new_tag)
 
     def to_dict(self):
         returned_dict = {
@@ -30,3 +29,9 @@ class Wallet:
             returned_dict['exchangeDeposits'] = self.exchange_deposits
 
         return returned_dict
+
+    def __eq__(self, other):
+        return self.address == other.address
+
+    def __hash__(self):
+        return hash(self.address)

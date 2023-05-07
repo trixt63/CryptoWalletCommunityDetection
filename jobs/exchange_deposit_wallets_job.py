@@ -31,6 +31,10 @@ class ExchangeDepositWalletsJob(BaseJob):
         self._exporter = MongoDB()
 
         self.exchange_wallets = exchange_wallets
+        self.wallets_groupby_exchanges = dict()
+        for wallet_addr, exchange_id in exchange_wallets.items():
+            self.wallets_groupby_exchanges.setdefault(exchange_id, []).append(wallet_addr)
+
         self.chain_id = chain_id
 
         self.start_timestamp = start_timestamp
@@ -45,13 +49,14 @@ class ExchangeDepositWalletsJob(BaseJob):
         super().__init__(work_iterable, batch_size, max_workers)
 
     def _start(self):
-        self._deposit_wallets = {}
+        # self._deposit_wallets = {}
+        self._deposit_wallets_dict = dict()
 
     def _end(self):
         self.batch_executor.shutdown()
         self._export()
 
-        del self._deposit_wallets
+        # del self._deposit_wallets
         gc.collect()
 
     def _execute_batch(self, works):
@@ -60,19 +65,25 @@ class ExchangeDepositWalletsJob(BaseJob):
         end_timestamp = min(start_timestamp + self.period, self.end_timestamp)
 
         block_range = Blocks().block_numbers(self.chain_id, [start_timestamp, end_timestamp])
-        result = {}
+        # result = {}
 
         if 'postgres' in self.sources:
-            # Get event transfer to exchange wallets, group by from_address
-            items = self._db.get_event_transfer_by_to_addresses(
-                self.exchange_wallets,
-                block_range[start_timestamp],
-                block_range[end_timestamp]
-            )
-            for item in items:
-                from_address = item['from_address']
-                if from_address not in self.exchange_wallets:
-                    result[from_address] = True
+            for exchange_id, wallet_addresses in self.wallets_groupby_exchanges.items():
+                # Get event transfer to exchange wallets, group by from_address
+                items = self._db.get_event_transfer_by_to_addresses(
+                    wallet_addresses,
+                    block_range[start_timestamp],
+                    block_range[end_timestamp]
+                )
+                for item in items:
+                    from_address = item['from_address']
+                    if from_address in self._deposit_wallets_dict:
+                        self._deposit_wallets_dict[from_address].exchange_deposits.append(exchange_id)
+                    else:
+                        new_deposit_wallet = Wallet(address=from_address)
+                        new_deposit_wallet.add_tags(WalletTags.centralized_exchange_deposit_wallet)
+                        self._deposit_wallets_dict[from_address] = new_deposit_wallet
+                        self._deposit_wallets_dict[from_address].exchange_deposits.append(exchange_id)
 
         # if 'mongo' in self.sources:
         #     # Get transaction to exchange wallets
@@ -86,19 +97,19 @@ class ExchangeDepositWalletsJob(BaseJob):
         #         if from_address not in self.exchange_wallets:
         #             result[from_address] = True
 
-        self._combine(result)
-        logger.info(f'Combine {len(self._deposit_wallets)} wallet addresses, took {round(time.time() - start_time)}s')
+        # self._combine(result)
+        # logger.info(f'Combine {len(self._deposit_wallets)} wallet addresses, took {round(time.time() - start_time)}s')
 
-    def _combine(self, result: dict):
-        # Combine result of batches
-        self._deposit_wallets.update(result)
+    # def _combine(self, result: dict):
+    #     # Combine result of batches
+    #     self._deposit_wallets.update(result)
 
     def _export(self):
         # Export exchange deposit wallets with tag
-        wallets = []
-        for address in self._deposit_wallets:
-            new_wallet = Wallet(address)
-            new_wallet.add_tags(WalletTags.centralized_exchange_deposit_wallet)
-            wallets.append(new_wallet)
+        wallets = list(self._deposit_wallets_dict.values())
+        # for address in self._deposit_wallets:
+        #     new_wallet = Wallet(address)
+        #     new_wallet.add_tags(WalletTags.centralized_exchange_deposit_wallet)
+        #     wallets.append(new_wallet)
 
         self._exporter.update_wallets(wallets)

@@ -80,7 +80,7 @@ class ExchangeWallets(CLIJob):
             init_last_synced_file(self.start_timestamp or int(time.time() - self.interval), self.last_synced_file)
         self.start_timestamp = read_last_synced_file(self.last_synced_file)
 
-        self.exchange_wallets = list(self.get_exchange_wallets())
+        self.exchange_wallets = self.get_exchange_wallets()
 
     def _start(self):
         self.end_time = self.start_timestamp + self.interval
