@@ -28,7 +28,7 @@ class MongoDB:
             wallets_data = []
             for wallet in wallets:
                 wallet_dict = wallet.to_dict()
-                wallet_dict['_id'] = f"{wallet_dict['chainId']}_{wallet_dict['address']}"
+                wallet_dict['_id'] = wallet.address
                 tags = wallet_dict.pop('tags')
                 wallets_data.append(UpdateOne({'_id': wallet_dict['_id']},
                                               {'$set': wallet_dict, '$addToSet': {"tags": {'$each': tags}}},

@@ -34,14 +34,6 @@ class ArangoDB:
 
         self._wallets_col = self._get_collections(ArangoDBCollections.wallets)
         self._multichain_wallets_col = self._get_collections(ArangoDBCollections.multichain_wallets)
-        self._projects_col = self._get_collections(ArangoDBCollections.projects)
-        self._smart_contracts_col = self._get_collections(ArangoDBCollections.smart_contracts)
-        self._relationships_col = self._get_collections(ArangoDBCollections.relationships, edge=True)
-        self._call_smart_contracts_col = self._get_collections(ArangoDBCollections.call_smart_contracts, edge=True)
-
-        self._abi_col = self._get_collections(ArangoDBCollections.abi)
-        self._configs_col = self._get_collections(ArangoDBCollections.configs)
-        self._is_part_ofs_col = self._get_collections(ArangoDBCollections.is_part_ofs, edge=True)
 
     def _get_db(self, db_name, username, password):
         return self.client.db(db_name, username=username, password=password)
@@ -61,31 +53,26 @@ class ArangoDB:
             database.create_collection(collection_name, shard_count=20, edge=edge)
         return database.collection(collection_name)
 
-    def get_wallet_addresses_and_lendings(self, chain_id: str, timestamp: int=None, batch_size=1000):
+    def get_wallet_addresses_and_lendings(self, flagged, batch_size=1000):
         try:
-            if timestamp:
-                query = f"""
-                    for w in wallets
-                    filter w.chainId == '{chain_id}' and
-                    w.depositInUSD > 0 or w.borrowInUSD > 0 
-                    and w.lastUpdatedAt > {timestamp}
-                    return {{
-                        'address': w.address,
-                        'lendings': w.lendings
-                    }}
-                """
-            else:
-                query = f"""
-                    for w in wallets
-                    filter w.chainId == '{chain_id}' and
-                    w.depositInUSD > 0 or w.borrowInUSD > 0 
-                    return {{
-                        'address': w.address,
-                        'lendings': w.lendings
-                    }}
-                """
+            query = f"""
+                for w in multichain_wallets
+                filter w.flagged == {flagged}
+                and length(w.lendings)
+                return {{
+                    'address': w.address,
+                    'lendings': w.lendings
+                }}
+            """
             cursor = self._db.aql.execute(query, batch_size=batch_size)
             return cursor
         except Exception as ex:
             logger.exception(ex)
         return None
+
+    def get_multichain_wallets_current_batch_idx(self):
+        query = f"""for doc in credit_score_configs
+                    filter doc._key == 'multichain_wallets_flagged_state'
+                    return doc.batch_idx"""
+        cursor = self._db.aql.execute(query)
+        return list(cursor)[0]
