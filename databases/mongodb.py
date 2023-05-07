@@ -15,8 +15,7 @@ class MongoDB:
         self.connection = MongoClient(connection_url)
 
         self._db = self.connection[MongoDBConfig.DATABASE]
-        # self.wallets_col = self._db['cryptowallets']
-        self.wallets_col = self._db['exchangeDepositWallets']
+        self.wallets_col = self._db['cryptowallets']
 
         self._create_index()
 

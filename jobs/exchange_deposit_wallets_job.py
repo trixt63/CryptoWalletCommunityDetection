@@ -77,13 +77,13 @@ class ExchangeDepositWalletsJob(BaseJob):
                 )
                 for item in items:
                     from_address = item['from_address']
-                    if from_address in self._deposit_wallets_dict:
-                        self._deposit_wallets_dict[from_address].exchange_deposits.append(exchange_id)
+                    if from_address in self._deposit_wallets_dict.keys():
+                        self._deposit_wallets_dict[from_address].exchange_deposits.add(exchange_id)
                     else:
                         new_deposit_wallet = Wallet(address=from_address)
                         new_deposit_wallet.add_tags(WalletTags.centralized_exchange_deposit_wallet)
                         self._deposit_wallets_dict[from_address] = new_deposit_wallet
-                        self._deposit_wallets_dict[from_address].exchange_deposits.append(exchange_id)
+                        self._deposit_wallets_dict[from_address].exchange_deposits.add(exchange_id)
 
         # if 'mongo' in self.sources:
         #     # Get transaction to exchange wallets
