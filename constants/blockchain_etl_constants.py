@@ -1,4 +1,4 @@
-from src.constants.network_constants import Networks
+from constants.network_constants import Networks
 
 
 class BlockchainETLCollections:

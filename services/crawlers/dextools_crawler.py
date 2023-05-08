@@ -5,7 +5,7 @@ from bs4 import BeautifulSoup as soup
 from selenium.webdriver.common.by import By
 import selenium.common.exceptions
 
-from crawlers.base_crawler import BaseCrawler
+from services.crawlers.base_crawler import BaseCrawler
 from utils.logger_utils import get_logger
 from models.dex_transaction import DexTransaction
 

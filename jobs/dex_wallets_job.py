@@ -2,9 +2,7 @@ import json
 
 from databases.arangodb_klg import ArangoDB
 from databases.mongodb import MongoDB
-from constants.tag_constants import WalletTags
-from crawlers.dextools_crawler import DEXToolsCrawler
-from models.wallet import Wallet
+from services.crawlers.dextools_crawler import DEXToolsCrawler
 from utils.logger_utils import get_logger
 
 

@@ -1,7 +1,7 @@
 from pymongo import MongoClient, UpdateOne
 from pymongo.errors import BulkWriteError
 
-from config import BlockchainETLConfig, TestBlockchainETLConfig
+from config import BlockchainETLConfig
 from constants.blockchain_etl_constants import BlockchainETLCollections, BlockchainETLIndexes
 from constants.time_constants import TimeConstants
 from utils.logger_utils import get_logger
@@ -14,7 +14,7 @@ class BlockchainETL:
     def __init__(self, connection_url=None, db_prefix=""):
         self._conn = None
         if not connection_url:
-            connection_url = TestBlockchainETLConfig.CONNECTION_URL
+            connection_url = BlockchainETLConfig.CONNECTION_URL
 
         self.connection_url = connection_url.split('@')[-1]
         self.connection = MongoClient(connection_url)
