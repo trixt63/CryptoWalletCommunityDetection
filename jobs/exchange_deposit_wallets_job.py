@@ -85,25 +85,6 @@ class ExchangeDepositWalletsJob(BaseJob):
                         self._deposit_wallets_dict[from_address] = new_deposit_wallet
                         self._deposit_wallets_dict[from_address].exchange_deposits.add(exchange_id)
 
-        # if 'mongo' in self.sources:
-        #     # Get transaction to exchange wallets
-        #     docs = self._blockchain_etl.get_transactions_to_addresses(
-        #         self.exchange_wallets,
-        #         block_range[start_timestamp],
-        #         block_range[end_timestamp]
-        #     )
-        #     for item in docs:
-        #         from_address = item['from_address']
-        #         if from_address not in self.exchange_wallets:
-        #             result[from_address] = True
-
-        # self._combine(result)
-        # logger.info(f'Combine {len(self._deposit_wallets)} wallet addresses, took {round(time.time() - start_time)}s')
-
-    # def _combine(self, result: dict):
-    #     # Combine result of batches
-    #     self._deposit_wallets.update(result)
-
     def _export(self):
         # Export exchange deposit wallets with tag
         wallets = list(self._deposit_wallets_dict.values())
