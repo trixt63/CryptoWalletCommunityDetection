@@ -12,7 +12,6 @@ from constants.time_constants import TimeConstants
 from databases.arangodb_klg import ArangoDB
 from databases.blockchain_etl import BlockchainETL
 from databases.postgresql import PostgresDB
-# from exporters.arangodb_exporter import ArangoDBExporter
 from jobs.cli_job import CLIJob
 from jobs.exchange_deposit_wallets_job import ExchangeDepositWalletsJob
 from utils.file_utils import init_last_synced_file, read_last_synced_file, write_last_synced_file
@@ -44,8 +43,9 @@ def exchange_deposit_wallets(last_synced_file, start_time, end_time, period, max
     _blockchain_etl = BlockchainETL(BlockchainETLConfig.CONNECTION_URL, db_prefix=db_prefix)
 
     job = ExchangeWallets(
-        blockchain_etl=_blockchain_etl, start_timestamp=start_time, end_timestamp=end_time, period=period, interval=interval,
-        max_workers=max_workers, chain_id=chain_id, last_synced_file=last_synced_file, sources=sources
+        blockchain_etl=_blockchain_etl, chain_id=chain_id,
+        start_timestamp=start_time, end_timestamp=end_time, period=period, interval=interval,
+        max_workers=max_workers, last_synced_file=last_synced_file, sources=sources
     )
     # job.export_exchange_address()
     job.run()
@@ -77,7 +77,8 @@ class ExchangeWallets(CLIJob):
         # self._exporter = ArangoDBExporter(klg_db)
 
         if (self.start_timestamp is not None) or (not os.path.isfile(self.last_synced_file)):
-            init_last_synced_file(self.start_timestamp or int(time.time() - self.interval), self.last_synced_file)
+            _DEFAULT_START_TIME = int(time.time() - TimeConstants.DAYS_30)
+            init_last_synced_file(self.start_timestamp or _DEFAULT_START_TIME, self.last_synced_file)
         self.start_timestamp = read_last_synced_file(self.last_synced_file)
 
         self.exchange_wallets = self.get_exchange_wallets()
@@ -120,22 +121,3 @@ class ExchangeWallets(CLIJob):
             wallets = info.get('wallets', {})
             exchange_wallets.update({w.lower(): exchange_id for w in wallets.get(self.chain_id, [])})
         return exchange_wallets
-
-    # def export_exchange_address(self):
-    #     klg_db = ArangoDB()
-    #     logger.info(f'Connect to graph: {klg_db.connection_url}')
-    #     _exporter = self._klg_db
-    #
-    #     exchange_wallets = self.get_exchange_wallets()
-    #     data = []
-    #     for address, exchange_id in exchange_wallets.items():
-    #         data.append({
-    #             'address': address,
-    #             'chainId': self.chain_id,
-    #             'project': exchange_id,
-    #             'tags': {WalletTags.centralized_exchange_wallet: True}
-    #         })
-    #
-    #     _exporter.export_wallets(data)
-    #     logger.info(f'Save {len(data)} exchange wallets')
-    #
