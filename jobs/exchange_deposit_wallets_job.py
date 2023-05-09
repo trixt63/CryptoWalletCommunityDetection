@@ -91,7 +91,7 @@ class ExchangeDepositWalletsJob(BaseJob):
 
             for item in items:
                 from_address = item['from_address']
-                if from_address in self._wallets_by_address.keys():
+                if from_address in self._wallets_by_address:
                     self._wallets_by_address[from_address].exchange_deposits.add(exchange_id)
                 else:
                     new_deposit_wallet = Wallet(address=from_address)
