@@ -29,17 +29,16 @@ logger = get_logger('Exchange Trading Enricher')
 @click.option('-w', '--max-workers', default=8, show_default=True, type=int, help='The number of workers')
 @click.option('-c', '--chain', default='bsc', show_default=True, type=str, help='Network name example bsc or polygon')
 @click.option('--interval', default=TimeConstants.A_DAY, show_default=True, type=int, help='Interval to repeat execute')
-@click.option('--sources', default=None, show_default=True, type=str, help='Sources to get data')
-def exchange_deposit_wallets(last_synced_file, start_time, end_time, period, max_workers, chain, interval, sources):
+@click.option('--source', default=None, show_default=True, type=str, multiple=True, help='Source to get data')
+def exchange_deposit_wallets(last_synced_file, start_time, end_time, period, max_workers, chain, interval, source):
     """Get exchange trading information."""
     chain = str(chain).lower()
     if chain not in Chains.mapping:
         raise click.BadOptionUsage("--chain", f"Chain {chain} is not support")
     chain_id = Chains.mapping[chain]
     db_prefix = DBPrefix.mapping[chain]
+    sources = list(source)
 
-    if isinstance(sources, str):
-        sources = sources.split(',')
     _blockchain_etl = BlockchainETL(BlockchainETLConfig.CONNECTION_URL, db_prefix=db_prefix)
 
     job = ExchangeWallets(
