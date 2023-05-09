@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import time
 
@@ -80,12 +81,11 @@ class ExchangeWallets(CLIJob):
         self.start_timestamp = read_last_synced_file(self.last_synced_file)
 
         self.exchange_wallets = self.get_exchange_wallets()
+        self.cex_deposit_wallets = {}
 
     def _start(self):
         self.end_time = self.start_timestamp + self.interval
         logger.info(f'Start execute from {human_readable_time(self.start_timestamp)} to {human_readable_time(self.end_time)}')
-
-        self.cex_deposit_wallets = {}
 
     def _execute(self, *args, **kwargs):
         job = ExchangeDepositWalletsJob(
