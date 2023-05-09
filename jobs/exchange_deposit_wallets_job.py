@@ -10,7 +10,7 @@ from databases.postgresql import PostgresDB
 from databases.mongodb import MongoDB
 # from exporters.arangodb_exporter import ArangoDBExporter
 from models.blocks import Blocks
-from models.wallet import Wallet, WalletTags
+from models.wallet import Wallet
 from utils.logger_utils import get_logger
 
 logger = get_logger('Exchange Deposit Wallet Job')
