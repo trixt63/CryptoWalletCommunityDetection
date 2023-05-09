@@ -7,7 +7,6 @@ import click
 from config import BlockchainETLConfig
 from constants.blockchain_etl_constants import DBPrefix
 from constants.network_constants import Chains
-from constants.tag_constants import WalletTags
 from constants.time_constants import TimeConstants
 from databases.arangodb_klg import ArangoDB
 from databases.blockchain_etl import BlockchainETL

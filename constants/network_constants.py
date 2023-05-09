@@ -92,7 +92,7 @@ class Networks:
 
     providers = {
         bsc: 'https://bsc-dataseed1.binance.org/',
-        ethereum: 'https://rpc.ankr.com/eth',
+        ethereum: 'https://little-thrumming-butterfly.discover.quiknode.pro/aa4eaa63428402a759d52cb6d33c138698031e31/',
         fantom: 'https://rpc.ftm.tools/',
         polygon: 'https://polygon-rpc.com'
     }
