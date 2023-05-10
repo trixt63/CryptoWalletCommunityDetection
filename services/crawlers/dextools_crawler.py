@@ -42,7 +42,7 @@ class DEXToolsCrawler:
                 is_bot = True if cols[-1].find('fa-icon') else False
 
                 newly_crawled_transactions.add(DexTransaction(
-                    timestamp=int(datetime.strptime(trade_date, ' %Y-%m-%d %H:%M:%S ').timestamp()),
+                    # timestamp=int(datetime.strptime(trade_date, ' %Y-%m-%d %H:%M:%S ').timestamp()),
                     maker_address=maker_link.split('/')[-1].lower(),
                     transaction_hash=tx_link.split('/')[-1].lower(),
                     is_bot=is_bot
@@ -59,7 +59,7 @@ class DEXToolsCrawler:
             time.sleep(1)
             page_number += 1
 
-        return [tx.to_dict() for tx in crawled_transactions]
+        return crawled_transactions
 
     @staticmethod
     def _create_dextools_url(chain_id, contract_address):
