@@ -1,3 +1,5 @@
+from typing import Dict, List
+from models.wallet import Wallet
 from pymongo import MongoClient, UpdateOne
 
 from config import MongoDBConfig
@@ -15,7 +17,8 @@ class MongoDB:
         self.connection = MongoClient(connection_url)
 
         self._db = self.connection[MongoDBConfig.DATABASE]
-        self.wallets_col = self._db['cryptowallets']
+        self.wallets_col = self._db['dexWallets']
+        self.lp_tokens_col = self._db['elite_lp_tokens']
 
         self._create_index()
 
@@ -23,7 +26,7 @@ class MongoDB:
         if 'wallets_number_of_txs_index_1' not in self.wallets_col.index_information():
             self.wallets_col.create_index([('number_of_txs', 1)], name='wallets_number_of_txs_index_1')
 
-    def update_wallets(self, wallets: list):
+    def update_wallets(self, wallets: List[Wallet]):
         try:
             wallets_data = []
             for wallet in wallets:
@@ -36,3 +39,8 @@ class MongoDB:
             self.wallets_col.bulk_write(wallets_data)
         except Exception as ex:
             logger.exception(ex)
+
+    def get_lp_contract_addresses(self, chain_id):
+        _filter = {'chainId': chain_id}
+        tokens_cursors = self.lp_tokens_col.find(_filter).batch_size(1000)
+        return tokens_cursors

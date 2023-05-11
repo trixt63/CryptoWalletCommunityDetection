@@ -8,6 +8,7 @@ class Wallet:
 
         self.lendings = list()
         self.exchange_deposits = set()
+        self.dexes = set()
 
     def add_tags(self, new_tag: str):
         if new_tag not in WalletTags.all_wallet_tags:
@@ -27,6 +28,9 @@ class Wallet:
 
         if len(self.exchange_deposits):
             returned_dict['exchangeDeposits'] = list(self.exchange_deposits)
+
+        if len(self.dexes):
+            returned_dict['dexes'] = list(self.dexes)
 
         return returned_dict
 

@@ -1,0 +1,33 @@
+{
+  "pancakeswap-amm": {
+    "name": "PancakeSwap",
+    "routers": {
+      "0x38": [
+        "0x10ed43c718714eb63d5aa57b78b54704e256024e"
+      ]
+    },
+    "factory": {
+      "0x38": "0x10ed43c718714eb63d5aa57b78b54704e256024e"
+    }
+  },
+  "uniswap_v2": {
+    "name": "Uniswap v2",
+    "routers": {
+      "0x1": [
+        "0x7a250d5630b4cf539739df2c5dacb4c659f2488d"
+      ]
+    },
+    "factory": {
+      "0x1": "0x5c69bee701ef814a2b6a3edd4b1652cb9cc5aa6f"
+    }
+  },
+  "spookyswap": {
+    "name": "SpookySwap",
+    "routers": {
+      "0xfa": [
+        "0xf491e7b69e4244ad4002bc14e878a34207e38c29"
+      ]
+    },
+    "factory": "0x152ee697f2e276fa89e96742e9bb9ab1f2e61be3"
+  }
+}

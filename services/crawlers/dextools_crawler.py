@@ -7,15 +7,19 @@ import selenium.common.exceptions
 
 from services.crawlers.base_crawler import BaseCrawler
 from utils.logger_utils import get_logger
+from utils.retry_handler import retry_handler
 from models.dex_transaction import DexTransaction
 
 logger = get_logger('DEXTools Crawler')
+
+PAGE_NUMBER_LIMIT = 50
 
 
 class DEXToolsCrawler:
     def __init__(self):
         self.crawler = BaseCrawler()
 
+    @retry_handler
     def get_exchanges(self, chain_id, contract_address):
         logger.info(f"Start crawl DEXTools of contract {contract_address} on chain {chain_id}")
         _url = self._create_dextools_url(chain_id, contract_address)
@@ -42,7 +46,7 @@ class DEXToolsCrawler:
                 is_bot = True if cols[-1].find('fa-icon') else False
 
                 newly_crawled_transactions.add(DexTransaction(
-                    timestamp=int(datetime.strptime(trade_date, ' %Y-%m-%d %H:%M:%S ').timestamp()),
+                    # timestamp=int(datetime.strptime(trade_date, ' %Y-%m-%d %H:%M:%S ').timestamp()),
                     maker_address=maker_link.split('/')[-1].lower(),
                     transaction_hash=tx_link.split('/')[-1].lower(),
                     is_bot=is_bot
@@ -58,8 +62,10 @@ class DEXToolsCrawler:
             driver.execute_script("arguments[0].click();", next_page_button)
             time.sleep(1)
             page_number += 1
+            if page_number > PAGE_NUMBER_LIMIT:
+                break
 
-        return [tx.to_dict() for tx in crawled_transactions]
+        return crawled_transactions
 
     @staticmethod
     def _create_dextools_url(chain_id, contract_address):
