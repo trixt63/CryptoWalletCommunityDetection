@@ -10,6 +10,7 @@ from models.wallet import Wallet
 from models.dex_transaction import DexTransaction
 from services.crawlers.dextools_crawler import DEXToolsCrawler
 from utils.logger_utils import get_logger
+from utils.retry_handler import retry_handler
 
 logger = get_logger('DEX traders Collector Job')
 
@@ -31,20 +32,34 @@ class DexTradersCollectorJob(CLIJob):
 
     def _execute(self, *args, **kwargs):
         for chain_id in self.chain_ids:
+            self.dex_wallets = dict()
             logger.info(f"Start crawl traders of swap contracts on chain {chain_id}")
             logger.info(f"Getting lp contracts on chain {chain_id}")
-            contract_addresses = self.db.get_lp_contract_addresses(chain_id)
+            lp_tokens = self.db.get_lp_contract_addresses(chain_id)
 
-            logger.info(f"Got {len(contract_addresses)} lp contracts from chain {chain_id}. Start crawling")
-            for _count, contract_addr in enumerate(contract_addresses):
-                transactions = self.crawler.get_exchanges(chain_id=chain_id,
-                                                          contract_address=contract_addr)
-                for tx in transactions:
-                    new_dex_trader_wallet = Wallet(address=tx.maker_address)
-                    new_dex_trader_wallet.add_tags(WalletTags.dex_traders)
-                    if tx.is_bot:
-                        new_dex_trader_wallet.add_tags(WalletTags.bot)
-                logger.info(f"Finish crawling {_count}/{len(contract_addresses)} lp contracts")
+            logger.info(f"Finish get lp contract addresses. Start crawling...")
+            for _count, lp_token in enumerate(lp_tokens):
+                # transactions = self.crawler.get_exchanges(chain_id=chain_id,
+                #                                           contract_address=lp_token['address'])
+                # for tx in transactions:
+                #     dex_wallets_addr = tx.maker_address
+                #     if dex_wallets_addr in dex_wallets:
+                #         dex_wallets[dex_wallets_addr].dexes.add(lp_token['dex'])
+                #         if tx.is_bot:
+                #             dex_wallets[dex_wallets_addr].add_tags(WalletTags.bot)
+                #     else:
+                #         new_dex_trader_wallet = Wallet(address=tx.maker_address)
+                #         new_dex_trader_wallet.add_tags(WalletTags.dex_trader)
+                #         new_dex_trader_wallet.dexes.add(lp_token['dex'])
+                #         if tx.is_bot:
+                #             new_dex_trader_wallet.add_tags(WalletTags.bot)
+                #         dex_wallets[dex_wallets_addr] = new_dex_trader_wallet
+                # self._export(list(dex_wallets.values()))
+                try:
+                    self._get_dex_traders(chain_id, lp_token)
+                    self._export(list(self.dex_wallets.values()))
+                except TypeError:
+                    logger.warning(f"Cannot crawl transactions of LP {lp_token['address']} from Dextools")
 
     def _export(self, wallets: List[Wallet]):
         # self._exporter.export_projects(data)
@@ -53,3 +68,21 @@ class DexTradersCollectorJob(CLIJob):
     def _retry(self):
         logger.warning(f'Try again after {SLEEP_DURATION} seconds ...')
         time.sleep(SLEEP_DURATION)
+
+    @retry_handler
+    def _get_dex_traders(self, chain_id, lp_token):
+        transactions = self.crawler.get_exchanges(chain_id=chain_id,
+                                                  contract_address=lp_token['address'])
+        for tx in transactions:
+            dex_wallets_addr = tx.maker_address
+            if dex_wallets_addr in self.dex_wallets:
+                self.dex_wallets[dex_wallets_addr].dexes.add(lp_token['dex'])
+                if tx.is_bot:
+                    self.dex_wallets[dex_wallets_addr].add_tags(WalletTags.bot)
+            else:
+                new_dex_trader_wallet = Wallet(address=tx.maker_address)
+                new_dex_trader_wallet.add_tags(WalletTags.dex_trader)
+                new_dex_trader_wallet.dexes.add(lp_token['dex'])
+                if tx.is_bot:
+                    new_dex_trader_wallet.add_tags(WalletTags.bot)
+                self.dex_wallets[dex_wallets_addr] = new_dex_trader_wallet

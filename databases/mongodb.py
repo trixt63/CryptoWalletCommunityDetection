@@ -17,7 +17,7 @@ class MongoDB:
         self.connection = MongoClient(connection_url)
 
         self._db = self.connection[MongoDBConfig.DATABASE]
-        self.wallets_col = self._db['cryptowallets']
+        self.wallets_col = self._db['dexWallets']
         self.lp_tokens_col = self._db['elite_lp_tokens']
 
         self._create_index()
@@ -43,4 +43,4 @@ class MongoDB:
     def get_lp_contract_addresses(self, chain_id):
         _filter = {'chainId': chain_id}
         tokens_cursors = self.lp_tokens_col.find(_filter).batch_size(1000)
-        return [token['address'] for token in tokens_cursors]
+        return tokens_cursors
