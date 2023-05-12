@@ -1,10 +1,8 @@
 import time
 
-# from databases.arangodb_klg import ArangoDB
 from databases.mongodb_entity import MongoDBEntity
 from databases.mongodb import MongoDB
 from constants.tag_constants import WalletTags
-# from models.wallet.wallet import Wallet
 from models.wallet.wallet_lending import WalletLending
 from models.project import Project
 from utils.logger_utils import get_logger
