@@ -36,7 +36,7 @@ class Wallet:
         # if len(self.lps_traded):
         #     returned_dict['lps_traded'] = list(self.lps_traded)
         #
-        # return returned_dict
+        return returned_dict
 
     def __eq__(self, other):
         return self.address == other.address
