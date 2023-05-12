@@ -12,7 +12,7 @@ class WalletTradeLP(Wallet):
 
     def add_project(self, project: Project):
         if project.project_id in self.traded_lps:
-            self.traded_lps[project.project_id].add_deployments(project.get_deployment())
+            self.traded_lps[project.project_id].add_deployments(project.deployments)
         else:
             self.traded_lps[project.project_id] = project
 

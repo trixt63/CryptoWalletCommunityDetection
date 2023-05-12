@@ -7,24 +7,20 @@ class Project:
                  address: str = None):
         self.project_id = project_id
 
-        self._deployments: Set[_Deployment] = set()
+        self.deployments: Set[_Deployment] = set()
 
         if (chain_id is not None) and (address is not None):
-            self.add_deployment(chain_id, address)
-
-    def get_deployment(self):
-        return self._deployments
-
-    def add_deployment(self, chain_id, address):
-        self._deployments.add(_Deployment(chain_id, address))
+            self.deployments.add(_Deployment(chain_id, address))
 
     def add_deployments(self, added_deployments: set):
-        self._deployments.union(added_deployments)
+        self.deployments.union(added_deployments)
 
-    def to_dict(self):
-        return {
-            self.project_id: {_depl.chain_id: _depl.address for _depl in self._deployments}
-        }
+    def to_list(self):
+        return [{
+            # self.project_id: {_depl.chain_id: _depl.address for _depl in self.deployments}
+            'chainId': _depl.chain_id,
+            'address': _depl.address
+        } for _depl in self.deployments]
 
     def __eq__(self, other):
         return self.project_id == other.project_id

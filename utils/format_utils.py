@@ -85,3 +85,12 @@ def format_cmc_number_data(text, handler_func=int, exception='--', default_value
 
 def format_cmc_launched_at(text):
     return int(datetime.datetime.strptime(text, '%b %Y').timestamp())
+
+
+def snake_to_pascal(text: str):
+    return "".join(x.capitalize() for x in text.lower().split("_"))
+
+
+def snake_to_lower_camel(text: str):
+    camel_string = snake_to_pascal(text)
+    return text[0].lower() + camel_string[1:]

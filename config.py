@@ -50,6 +50,11 @@ class MongoDBConfig:
     CONNECTION_URL = os.getenv("MONGODB_CONNECTION_URL")
     DATABASE = os.getenv("MONGODB_DATABASE")
 
+
+class MongoDBEntityConfig:
+    CONNECTION_URL = os.getenv("MONGODB_ENTITY_CONNECTION_URL")
+    DATABASE = os.getenv("MONGODB_ENTITY_DATABASE", "knowledge_graph")
+
 # class MongoLendingConfig:
 #     HOST = os.getenv("MONGO_LENDING_HOST")
 #     PORT = os.getenv("MONGO_LENDING_PORT")

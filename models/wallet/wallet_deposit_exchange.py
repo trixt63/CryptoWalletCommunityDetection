@@ -12,7 +12,7 @@ class WalletDepositExchange(Wallet):
 
     def add_project(self, project: Project):
         if project.project_id in self.deposited_exchanges:
-            self.deposited_exchanges[project.project_id].add_deployments(project.get_deployment())
+            self.deposited_exchanges[project.project_id].add_deployments(project.deployments)
         else:
             self.deposited_exchanges[project.project_id] = project
 
