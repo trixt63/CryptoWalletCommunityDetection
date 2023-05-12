@@ -3,11 +3,8 @@ import time
 from databases.arangodb_klg import ArangoDB
 from databases.mongodb import MongoDB
 from constants.tag_constants import WalletTags
-from constants.time_constants import TimeConstants
-from models.wallet import Wallet
+from models.wallet.wallet import Wallet
 from utils.logger_utils import get_logger
-from utils.time_utils import round_timestamp
-
 
 logger = get_logger('Lending Wallets Exporter')
 
@@ -42,7 +39,7 @@ class LendingWalletsJob:
             if lending_pools:
                 new_lending_wallet = Wallet(address=wallet_addr_and_lendings['address'])
                 new_lending_wallet.add_tags(WalletTags.lending_wallet)
-                new_lending_wallet.lendings = lending_pools
+                new_lending_wallet.lending_pools = lending_pools
                 batch_lending_wallets.append(new_lending_wallet)
 
         logger.info(f"Flag {flagged}/{self.current_batch_id}: number of lending wallets: {len(batch_lending_wallets)}")

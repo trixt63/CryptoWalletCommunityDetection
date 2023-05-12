@@ -1,4 +1,3 @@
-import json
 import time
 from typing import List
 
@@ -6,8 +5,7 @@ from constants.time_constants import TimeConstants, SLEEP_DURATION
 from constants.tag_constants import WalletTags
 from databases.mongodb import MongoDB
 from jobs.cli_job import CLIJob
-from models.wallet import Wallet
-from models.dex_transaction import DexTransaction
+from models.wallet.wallet import Wallet
 from services.crawlers.dextools_crawler import DEXToolsCrawler
 from utils.logger_utils import get_logger
 from utils.retry_handler import retry_handler
@@ -39,22 +37,6 @@ class DexTradersCollectorJob(CLIJob):
 
             logger.info(f"Finish get lp contract addresses. Start crawling...")
             for _count, lp_token in enumerate(lp_tokens):
-                # transactions = self.crawler.get_exchanges(chain_id=chain_id,
-                #                                           contract_address=lp_token['address'])
-                # for tx in transactions:
-                #     dex_wallets_addr = tx.maker_address
-                #     if dex_wallets_addr in dex_wallets:
-                #         dex_wallets[dex_wallets_addr].dexes.add(lp_token['dex'])
-                #         if tx.is_bot:
-                #             dex_wallets[dex_wallets_addr].add_tags(WalletTags.bot)
-                #     else:
-                #         new_dex_trader_wallet = Wallet(address=tx.maker_address)
-                #         new_dex_trader_wallet.add_tags(WalletTags.dex_trader)
-                #         new_dex_trader_wallet.dexes.add(lp_token['dex'])
-                #         if tx.is_bot:
-                #             new_dex_trader_wallet.add_tags(WalletTags.bot)
-                #         dex_wallets[dex_wallets_addr] = new_dex_trader_wallet
-                # self._export(list(dex_wallets.values()))
                 try:
                     self._get_dex_traders(chain_id, lp_token)
                     self._export(list(self.dex_wallets.values()))
@@ -76,13 +58,13 @@ class DexTradersCollectorJob(CLIJob):
         for tx in transactions:
             dex_wallets_addr = tx.maker_address
             if dex_wallets_addr in self.dex_wallets:
-                self.dex_wallets[dex_wallets_addr].dexes.add(lp_token['dex'])
+                self.dex_wallets[dex_wallets_addr].lps_traded.add(lp_token['dex'])
                 if tx.is_bot:
                     self.dex_wallets[dex_wallets_addr].add_tags(WalletTags.bot)
             else:
                 new_dex_trader_wallet = Wallet(address=tx.maker_address)
                 new_dex_trader_wallet.add_tags(WalletTags.dex_trader)
-                new_dex_trader_wallet.dexes.add(lp_token['dex'])
+                new_dex_trader_wallet.lps_traded.add(lp_token['dex'])
                 if tx.is_bot:
                     new_dex_trader_wallet.add_tags(WalletTags.bot)
                 self.dex_wallets[dex_wallets_addr] = new_dex_trader_wallet

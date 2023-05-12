@@ -10,7 +10,7 @@ from databases.postgresql import PostgresDB
 from databases.mongodb import MongoDB
 # from exporters.arangodb_exporter import ArangoDBExporter
 from models.blocks import Blocks
-from models.wallet import Wallet
+from models.wallet.wallet import Wallet
 from utils.logger_utils import get_logger
 
 logger = get_logger('Exchange Deposit Wallet Job')
@@ -92,12 +92,12 @@ class ExchangeDepositWalletsJob(BaseJob):
             for item in items:
                 from_address = item['from_address']
                 if from_address in self._wallets_by_address:
-                    self._wallets_by_address[from_address].exchange_deposits.add(exchange_id)
+                    self._wallets_by_address[from_address].deposited_exchanges.add(exchange_id)
                 else:
                     new_deposit_wallet = Wallet(address=from_address)
                     new_deposit_wallet.add_tags(WalletTags.centralized_exchange_deposit_wallet)
                     self._wallets_by_address[from_address] = new_deposit_wallet
-                    self._wallets_by_address[from_address].exchange_deposits.add(exchange_id)
+                    self._wallets_by_address[from_address].deposited_exchanges.add(exchange_id)
 
     def _export(self):
         """Export exchange deposit wallets with tag"""

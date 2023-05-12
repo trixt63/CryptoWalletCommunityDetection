@@ -1,5 +1,5 @@
-from typing import Dict, List
-from models.wallet import Wallet
+from typing import List
+from models.wallet.wallet import Wallet
 from pymongo import MongoClient, UpdateOne
 
 from config import MongoDBConfig
