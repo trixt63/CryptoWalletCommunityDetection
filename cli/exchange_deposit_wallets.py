@@ -9,7 +9,8 @@ from config import BlockchainETLConfig
 from constants.blockchain_etl_constants import DBPrefix
 from constants.network_constants import Chains
 from constants.time_constants import TimeConstants
-from databases.arangodb_klg import ArangoDB
+# from databases.arangodb_klg import ArangoDB
+from databases.mongodb_entity import MongoDBEntity
 from databases.blockchain_etl import BlockchainETL
 from databases.postgresql import PostgresDB
 from jobs.cli_job import CLIJob
@@ -71,7 +72,7 @@ class ExchangeWallets(CLIJob):
 
     def _pre_start(self):
         self._db = PostgresDB()
-        self._klg_db = ArangoDB()
+        self._klg_db = MongoDBEntity()
         # logger.info(f'Connect to graph: {klg_db.connection_url}')
         # self._exporter = ArangoDBExporter(klg_db)
 

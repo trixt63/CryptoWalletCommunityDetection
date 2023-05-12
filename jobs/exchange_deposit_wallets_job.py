@@ -5,12 +5,13 @@ from multithread_processing.base_job import BaseJob
 
 from constants.tag_constants import WalletTags
 from databases.blockchain_etl import BlockchainETL
-from databases.arangodb_klg import ArangoDB
+# from databases.arangodb_klg import ArangoDB
+from databases.mongodb_entity import MongoDBEntity
 from databases.postgresql import PostgresDB
 from databases.mongodb import MongoDB
 # from exporters.arangodb_exporter import ArangoDBExporter
 from models.blocks import Blocks
-from models.wallet.wallet import Wallet
+from models.wallet.wallet_deposit_exchange import WalletDepositExchange
 from utils.logger_utils import get_logger
 
 logger = get_logger('Exchange Deposit Wallet Job')
@@ -21,7 +22,7 @@ class ExchangeDepositWalletsJob(BaseJob):
             self,
             _db: PostgresDB,
             _blockchain_etl: BlockchainETL,
-            klg: ArangoDB,
+            klg: MongoDBEntity,
             exchange_wallets: dict,
             chain_id,
             start_timestamp, end_timestamp, period,

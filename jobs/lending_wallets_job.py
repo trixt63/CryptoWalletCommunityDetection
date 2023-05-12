@@ -38,11 +38,10 @@ class LendingWalletsJob:
         wallets_data = list(_cursor)
 
         for wallet_addr_and_lendings in wallets_data:
-            wallet_addr = wallet_addr_and_lendings['address']
             lending_pools_data = self._extract_lending_pools(wallet_addr_and_lendings.get('lendings'))
 
             if lending_pools_data:
-                new_lending_wallet = WalletLending(address=wallet_addr)
+                new_lending_wallet = WalletLending(address=wallet_addr_and_lendings['address'])
                 new_lending_wallet.add_tags(WalletTags.lending_wallet)
 
                 for _pool_data in lending_pools_data:
@@ -61,20 +60,23 @@ class LendingWalletsJob:
         self._export_wallets(batch_lending_wallets)
 
     def _extract_lending_pools(self, wallet_lendings_data: dict):
-        recent_lending_pools = list()
-        for lending_pool_key, lending_pool_data in wallet_lendings_data.items():
-            # deposit_logs = lending_pool_data['depositChangeLogs']
-            # deposit_latest_timestamp = max(deposit_logs.keys())
-            # borrow_logs = lending_pool_data['borrowChangeLogs']
-            # borrow_latest_timestamp = max(borrow_logs.keys())
-            # if (self._first_timestamp <= int(deposit_latest_timestamp) or
-            #         self._first_timestamp <= int(borrow_latest_timestamp)):
-            recent_lending_pools.append({
-                'chain_id': lending_pool_key.split('_')[0],
-                'address': lending_pool_key.split('_')[1],
-                'name': lending_pool_data['name']
-            })
-        return recent_lending_pools
+        if wallet_lendings_data:
+            recent_lending_pools = list()
+            for lending_pool_key, lending_pool_data in wallet_lendings_data.items():
+                # deposit_logs = lending_pool_data['depositChangeLogs']
+                # deposit_latest_timestamp = max(deposit_logs.keys())
+                # borrow_logs = lending_pool_data['borrowChangeLogs']
+                # borrow_latest_timestamp = max(borrow_logs.keys())
+                # if (self._first_timestamp <= int(deposit_latest_timestamp) or
+                #         self._first_timestamp <= int(borrow_latest_timestamp)):
+                recent_lending_pools.append({
+                    'chain_id': lending_pool_key.split('_')[0],
+                    'address': lending_pool_key.split('_')[1],
+                    'name': lending_pool_data['name']
+                })
+            return recent_lending_pools
+        else:
+            return None
 
     def _export_wallets(self, wallets: list):
         wallets_data = []
