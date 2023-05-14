@@ -41,9 +41,9 @@ class DexTradersCollectorJob(CLIJob):
             for _count, lp_token in enumerate(lp_contracts):
                 try:
                     self._get_dex_traders(chain_id, lp_token)
-                    self._export_wallets(list(self.dex_wallets.values()))
                 except TypeError:
                     logger.warning(f"Cannot crawl transactions of LP {lp_token['address']} from Dextools")
+        self._export_wallets(list(self.dex_wallets.values()))
 
     def _export_wallets(self, wallets: List[WalletTradeLP]):
         wallets_data = []
@@ -66,7 +66,7 @@ class DexTradersCollectorJob(CLIJob):
                               'number_of_calls': datum.get('numberOfThisMonthCalls', 0)}
                              for datum in lp_contracts_data]
         lp_contracts_list = sorted(all_lp_contracts, key=lambda d: d['number_of_calls'], reverse=True)
-        lp_contracts_list = lp_contracts_list[:5]
+        lp_contracts_list = lp_contracts_list[:200]
         return lp_contracts_list
 
     @retry_handler
