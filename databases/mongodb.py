@@ -17,8 +17,8 @@ class MongoDB:
         self.connection = MongoClient(connection_url)
 
         self._db = self.connection[MongoDBConfig.DATABASE]
-        self.wallets_col = self._db['lendingWallets']
         self.lp_tokens_col = self._db['elite_lp_tokens']
+        self.wallets_col = self._db['dexTraders']
 
         self._create_index()
 
@@ -44,7 +44,7 @@ class MongoDB:
         except Exception as ex:
             logger.exception(ex)
 
-    def get_lp_contract_addresses(self, chain_id):
-        _filter = {'chainId': chain_id}
-        tokens_cursors = self.lp_tokens_col.find(_filter).batch_size(1000)
-        return tokens_cursors
+    # def get_lp_contract_addresses(self, chain_id):
+    #     _filter = {'chainId': chain_id}
+    #     tokens_cursors = self.lp_tokens_col.find(_filter).batch_size(1000)
+    #     return tokens_cursors

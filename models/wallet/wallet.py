@@ -22,7 +22,6 @@ class Wallet:
             'address': self.address,
             'tags': self.tags
         }
-
         return returned_dict
 
     def __eq__(self, other):

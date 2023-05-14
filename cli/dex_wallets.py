@@ -1,15 +1,10 @@
-import json
-import os
-import time
-
 import click
 
-from constants.network_constants import Chains
 from constants.time_constants import TimeConstants
 from databases.mongodb import MongoDB
+from databases.mongodb_entity import MongoDBEntity
 from jobs.dex_wallets.lp_traders_job import DexTradersCollectorJob
 from utils.logger_utils import get_logger
-from utils.time_utils import round_timestamp, human_readable_time
 
 logger = get_logger('Exchange Trading Enricher')
 
@@ -22,6 +17,7 @@ def dex_wallets(interval):
     chain_ids = ['0xfa', '0x1', '0x38']
 
     mongodb = MongoDB()
+    mongodb_entity = MongoDBEntity()
 
-    job = DexTradersCollectorJob(chain_ids=chain_ids, db=mongodb)
+    job = DexTradersCollectorJob(chain_ids=chain_ids, db=mongodb, klg=mongodb_entity)
     job.run()

@@ -58,7 +58,7 @@ class CLIJob:
         return round_timestamp(int(time.time()), round_time=self.interval) + self.interval
 
     def _pre_start(self):
-        # Declare object variables and prepare data
+        # Declare object variables and prepare data, or declare database connection
         pass
 
     def _start(self):
