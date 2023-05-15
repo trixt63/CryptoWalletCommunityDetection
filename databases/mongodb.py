@@ -6,7 +6,7 @@ from utils.logger_utils import get_logger
 from utils.format_utils import snake_to_lower_camel
 
 logger = get_logger('MongoDB')
-WALLETS_COL = 'taggedWallets'
+WALLETS_COL = 'exchangeWallets'
 
 
 class MongoDB:

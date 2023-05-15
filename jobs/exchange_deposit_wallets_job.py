@@ -1,5 +1,6 @@
 import gc
 import time
+from typing import Dict
 
 from multithread_processing.base_job import BaseJob
 
@@ -12,6 +13,7 @@ from databases.mongodb import MongoDB
 # from exporters.arangodb_exporter import ArangoDBExporter
 from models.blocks import Blocks
 from models.wallet.wallet_deposit_exchange import WalletDepositExchange
+from models.project import Project
 from utils.logger_utils import get_logger
 
 logger = get_logger('Exchange Deposit Wallet Job')
@@ -54,11 +56,11 @@ class ExchangeDepositWalletsJob(BaseJob):
         super().__init__(work_iterable, batch_size, max_workers)
 
     def _start(self):
-        self._wallets_by_address = dict()  # {address: Wallet object}
+        self._wallets_by_address: Dict[str, WalletDepositExchange] = dict()  # {address: Wallet object}
 
     def _end(self):
         self.batch_executor.shutdown()
-        self._export()
+        self._export_wallets()
 
         del self._wallets_by_address
         gc.collect()
@@ -83,7 +85,7 @@ class ExchangeDepositWalletsJob(BaseJob):
                 )
             elif source == 'mongo':
                 items = self._blockchain_etl.get_transactions_to_addresses(
-                    self.exchange_wallets,
+                    wallet_addresses,
                     from_timestamp,
                     to_timestamp
                 )
@@ -92,15 +94,20 @@ class ExchangeDepositWalletsJob(BaseJob):
 
             for item in items:
                 from_address = item['from_address']
+                hot_wallet = Project(project_id=exchange_id,
+                                     address=from_address,
+                                     chain_id=self.chain_id)
                 if from_address in self._wallets_by_address:
-                    self._wallets_by_address[from_address].deposited_exchanges.add(exchange_id)
+                    # self._wallets_by_address[from_address].deposited_exchanges.add(exchange_id)
+                    self._wallets_by_address[from_address].add_project(hot_wallet)
                 else:
-                    new_deposit_wallet = Wallet(address=from_address)
-                    new_deposit_wallet.add_tags(WalletTags.centralized_exchange_deposit_wallet)
+                    new_deposit_wallet = WalletDepositExchange(address=from_address)
+                    # new_deposit_wallet.add_tags(WalletTags.centralized_exchange_deposit_wallet)
                     self._wallets_by_address[from_address] = new_deposit_wallet
-                    self._wallets_by_address[from_address].deposited_exchanges.add(exchange_id)
+                    self._wallets_by_address[from_address].add_project(hot_wallet)
 
-    def _export(self):
+    def _export_wallets(self):
         """Export exchange deposit wallets with tag"""
         wallets = list(self._wallets_by_address.values())
-        self._exporter.update_wallets(wallets)
+        wallets_data = [wallet.to_dict() for wallet in wallets]
+        self._exporter.update_wallets(wallets_data)

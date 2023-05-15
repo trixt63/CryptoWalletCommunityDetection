@@ -15,12 +15,14 @@ class Project:
     def add_deployments(self, added_deployments: set):
         self.deployments.union(added_deployments)
 
-    def to_list(self):
-        return [{
-            # self.project_id: {_depl.chain_id: _depl.address for _depl in self.deployments}
-            'chainId': _depl.chain_id,
-            'address': _depl.address
-        } for _depl in self.deployments]
+    def to_list(self, chain_only=False):
+        if chain_only:
+            return list({_depl.chain_id for _depl in self.deployments})
+        else:
+            return [{
+                'chainId': _depl.chain_id,
+                'address': _depl.address
+            } for _depl in self.deployments]
 
     def __eq__(self, other):
         return self.project_id == other.project_id
