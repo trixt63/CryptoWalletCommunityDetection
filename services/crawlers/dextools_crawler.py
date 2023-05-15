@@ -12,7 +12,7 @@ from models.dex_transaction import DexTransaction
 
 logger = get_logger('DEXTools Crawler')
 
-PAGE_NUMBER_LIMIT = 50
+PAGE_NUMBER_LIMIT = 60
 
 
 class DEXToolsCrawler:

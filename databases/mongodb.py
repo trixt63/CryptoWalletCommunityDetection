@@ -6,7 +6,7 @@ from utils.logger_utils import get_logger
 from utils.format_utils import snake_to_lower_camel
 
 logger = get_logger('MongoDB')
-WALLETS_COL = 'dexTraders'
+WALLETS_COL = 'taggedWallets'
 
 
 class MongoDB:
@@ -63,55 +63,3 @@ class MongoDB:
     #     _filter = {'chainId': chain_id}
     #     tokens_cursors = self.lp_tokens_col.find(_filter).batch_size(1000)
     #     return tokens_cursors
-
-    # def test_update(self):
-    #     datum = {
-    #       "_id": "0x305246818d727167f028f14b6f631e92a8e15795",
-    #       "address": "0x305246818d727167f028f14b6f631e92a8e15795",
-    #       "tags": [
-    #         "dex_trader",
-    #         "bot"
-    #       ],
-    #       "tradedlps": {
-    #         "pancakeswap": [
-    #           {
-    #             "chainId": "0x38",
-    #             "address": "0x2222"
-    #           }
-    #         ],
-    #         "spookyswap": [
-    #             {
-    #                 "chainId": "0xfa",
-    #                 "address": "0x1111"
-    #             },
-    #             {
-    #                 "chainId": "0xfa",
-    #                 "address": "0x2222"
-    #             }
-    #         ]
-    #       }
-    #     }
-    #
-    #     tags = datum.pop('tags')
-    #     base_datum = {
-    #         '_id': datum.pop('_id'),
-    #         'address': datum.pop('address'),
-    #     }
-    #
-    #     field_name = list(datum.keys())[0]
-    #     platform_names = list(datum[field_name].keys())
-    #
-    #     _filter = {'_id': base_datum['_id']}
-    #
-    #     __add_to_set = {f"{field_name}.{platform_name}": {"$each": datum[field_name][platform_name]}
-    #                     for platform_name in platform_names}
-    #     __add_to_set["tags"] = {'$each': tags}
-    #     _update = {
-    #         '$set': base_datum,
-    #         '$addToSet': __add_to_set
-    #     }
-    #     self.wallets_col.update_one(filter=_filter,
-    #                                 update=_update,
-    #                                 upsert=True)
-    #
-    #     return 0
