@@ -161,3 +161,6 @@ cython_debug/
 
 # Sync files
 last_synced.txt
+
+# Test folders
+.data/
