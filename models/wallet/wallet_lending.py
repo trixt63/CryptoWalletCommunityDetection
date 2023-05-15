@@ -19,7 +19,7 @@ class WalletLending(Wallet):
         returned_dict = super().to_dict()
 
         if len(self.lending_pools):
-            lending_pools_dict = {pool_id: pool_obj.to_list()
+            lending_pools_dict = {pool_id: pool_obj.to_deployments_list()
                                   for pool_id, pool_obj in self.lending_pools.items()}
             returned_dict['lendingPools'] = lending_pools_dict
 

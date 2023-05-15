@@ -21,8 +21,8 @@ class WalletDepositExchange(Wallet):
         returned_dict = super().to_dict()
 
         if len(self.deposited_exchanges):
-            deposited_exchanges = {pool_id: pool_obj.to_list(chain_only=True)
-                                   for pool_id, pool_obj in self.deposited_exchanges.items()}
+            deposited_exchanges = {cex_id: chains.to_deployed_chains_list()
+                                   for cex_id, chains in self.deposited_exchanges.items()}
             returned_dict['depositedExchanges'] = deposited_exchanges
 
         return returned_dict

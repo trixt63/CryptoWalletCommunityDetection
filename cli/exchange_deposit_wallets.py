@@ -19,7 +19,7 @@ from utils.file_utils import init_last_synced_file, read_last_synced_file, write
 from utils.logger_utils import get_logger
 from utils.time_utils import round_timestamp, human_readable_time
 
-logger = get_logger('Exchange Trading Enricher')
+logger = get_logger('Exchange Deposit wallet')
 
 
 @click.command(context_settings=dict(help_option_names=['-h', '--help']))
@@ -67,6 +67,8 @@ class ExchangeWallets(CLIJob):
 
         self.last_synced_file = last_synced_file
         self.sources = sources
+        if not self.sources:
+            self.sources = ['mongo', 'postgres']
 
         super().__init__(interval, end_timestamp, retry=False)
 

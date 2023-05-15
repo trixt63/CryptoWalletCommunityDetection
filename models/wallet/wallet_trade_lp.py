@@ -21,7 +21,7 @@ class WalletTradeLP(Wallet):
         returned_dict = super().to_dict()
 
         if len(self.traded_lps):
-            traded_lps = {dex_id: lp_obj.to_list()
+            traded_lps = {dex_id: lp_obj.to_deployments_list()
                           for dex_id, lp_obj in self.traded_lps.items()}
             returned_dict['tradedLPs'] = traded_lps
 

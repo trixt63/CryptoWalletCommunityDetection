@@ -65,7 +65,7 @@ class BlockchainETL:
         cursor = self.transaction_collection.find(filter_, projection=projection).batch_size(10000)
         return cursor
 
-    # @sync_log_time_exe(tag=TimeExeTag.database)
+    @sync_log_time_exe(tag=TimeExeTag.database)
     def get_transactions_to_addresses(self, to_addresses, from_block, to_block):
         filter_ = {
             "$and": [
