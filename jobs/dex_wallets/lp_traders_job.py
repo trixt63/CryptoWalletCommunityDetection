@@ -43,7 +43,7 @@ class DexTradersCollectorJob(CLIJob):
             except TypeError:
                 logger.warning(f"Cannot crawl transactions of LP {lp_contract_datum['address']} from Dextools")
 
-            self._export_wallets(list(self.dex_trader_wallets.values()))
+        self._export_wallets(list(self.dex_trader_wallets.values()))
 
     def _export_wallets(self, wallets: List[WalletTradeLP]):
         wallets_data = []
