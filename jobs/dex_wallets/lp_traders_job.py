@@ -41,6 +41,7 @@ class DexTradersCollectorJob(CLIJob):
             for _count, lp_token in enumerate(lp_contracts):
                 try:
                     self._get_dex_traders(chain_id, lp_token)
+                    logger.info(f"Get {_count+1} lp tokens on chain {chain_id}")
                 except TypeError:
                     logger.warning(f"Cannot crawl transactions of LP {lp_token['address']} from Dextools")
         self._export_wallets(list(self.dex_wallets.values()))
