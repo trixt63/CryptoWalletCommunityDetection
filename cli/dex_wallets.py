@@ -14,7 +14,7 @@ logger = get_logger('Exchange Trading Enricher')
 @click.option('--interval', default=TimeConstants.A_DAY, show_default=True, type=int, help='Interval to repeat execute')
 def dex_wallets(interval):
     """Get exchange trading information."""
-    chain_ids = ['0xfa', '0x1', '0x38']
+    chain_ids = ['0xfa', '0x38']
 
     mongodb = MongoDB()
     mongodb_entity = MongoDBEntity()
