@@ -80,13 +80,6 @@ class MongoDB:
     def count_exchange_deposit_wallets_each_chain(self, field_id, project_id, chain_id='0x38'):
         """Each CEX project stores a list of chain_ids, instead a list of objects like other type of project,
         so I need a separate function to handle this"""
-        _filter = {f"{field_id}.{project_id}": {"$exists": 1}}
-        _projection = {f"{field_id}.{project_id}": 1}
-        data = self.wallets_col.find(_filter, _projection)
-        list_data = list(data)
-        _count = 0
-        for datum in list_data:
-            print("datum")
-            if chain_id in datum[field_id][project_id]:
-                _count += 1
+        _filter = {f"{field_id}.{project_id}": chain_id}
+        _count = self.wallets_col.count_documents(_filter)
         return _count
