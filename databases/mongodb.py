@@ -59,7 +59,34 @@ class MongoDB:
         except Exception as ex:
             logger.exception(ex)
 
-    # def get_lp_contract_addresses(self, chain_id):
-    #     _filter = {'chainId': chain_id}
-    #     tokens_cursors = self.lp_tokens_col.find(_filter).batch_size(1000)
-    #     return tokens_cursors
+    # The next 3 functions are for analysis purpose ###
+    def count_wallets(self, _filter):
+        _count = self.wallets_col.count_documents(_filter)
+        return _count
+
+    def count_wallets_each_chain(self, field_id, project_id, chain_id='0x38'):
+        """Count number of wallets of each project on each chain"""
+        _filter = {f"{field_id}.{project_id}": {"$exists": 1}}
+        _projection = {f"{field_id}.{project_id}": 1}
+        deployments = self.wallets_col.find(_filter, _projection)
+        _count = 0
+        for _depl in deployments:
+            for project in _depl[field_id][project_id]:
+                if project['chainId'] == chain_id:
+                    _count += 1
+                    continue
+        return _count
+
+    def count_exchange_deposit_wallets_each_chain(self, field_id, project_id, chain_id='0x38'):
+        """Each CEX project stores a list of chain_ids, instead a list of objects like other type of project,
+        so I need a separate function to handle this"""
+        _filter = {f"{field_id}.{project_id}": {"$exists": 1}}
+        _projection = {f"{field_id}.{project_id}": 1}
+        data = self.wallets_col.find(_filter, _projection)
+        list_data = list(data)
+        _count = 0
+        for datum in list_data:
+            print("datum")
+            if chain_id in datum[field_id][project_id]:
+                _count += 1
+        return _count
