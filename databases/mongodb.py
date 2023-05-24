@@ -2,11 +2,11 @@ from typing import List
 from pymongo import MongoClient, UpdateOne
 
 from config import MongoDBConfig
+from constants.mongodb_constants import WALLETS_COL, CreatedPairEventsCollection
 from utils.logger_utils import get_logger
 from utils.format_utils import snake_to_lower_camel
 
 logger = get_logger('MongoDB')
-WALLETS_COL = 'depositWallets'
 
 
 class MongoDB:

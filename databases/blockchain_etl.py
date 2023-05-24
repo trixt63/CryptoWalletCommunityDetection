@@ -67,6 +67,7 @@ class BlockchainETL:
 
     # @sync_log_time_exe(tag=TimeExeTag.database)
     def get_transactions_to_addresses(self, to_addresses, from_block, to_block):
+        """For getting transactions to a list addresses (such as hot wallets)"""
         filter_ = {
             "$and": [
                 {"block_number": {"$gte": from_block, "$lte": to_block}},
@@ -132,38 +133,6 @@ class BlockchainETL:
         cursor = self.transaction_collection.find(filter_, projection).batch_size(10000)
         return cursor
 
-    def insert_transactions(self, transactions):
-        try:
-            self.transaction_collection.insert_many(transactions)
-        except BulkWriteError:
-            data = []
-            for tx in transactions:
-                data.append(UpdateOne({'_id': tx['_id']}, {'$set': tx}, upsert=True))
-            self.transaction_collection.bulk_write(data)
-
-    def insert_blocks(self, blocks):
-        try:
-            self.block_collection.insert_many(blocks)
-        except BulkWriteError:
-            data = []
-            for block in blocks:
-                data.append(UpdateOne({'_id': block['_id']}, {'$set': block}, upsert=True))
-            self.block_collection.bulk_write(data)
-
-    def delete_blocks(self, out_date_block):
-        try:
-            filter_ = {'number': {"$lte": out_date_block}}
-            self.block_collection.delete_many(filter_)
-        except Exception as ex:
-            logger.exception(ex)
-
-    def delete_transactions(self, out_date_block):
-        try:
-            filter_ = {'block_number': {"$lte": out_date_block}}
-            self.transaction_collection.delete_many(filter_)
-        except Exception as ex:
-            logger.exception(ex)
-
     def get_collector(self, collector_id):
         try:
             collector = self.collector_collection.find_one({'_id': collector_id})
@@ -171,12 +140,6 @@ class BlockchainETL:
         except Exception as ex:
             logger.exception(ex)
         return None
-
-    def update_collector(self, collector):
-        try:
-            self.collector_collection.update_one({'_id': collector['_id']}, {'$set': collector}, upsert=True)
-        except Exception as ex:
-            logger.exception(ex)
 
     def get_the_first_tx(self, address):
         filter_ = {
@@ -188,3 +151,14 @@ class BlockchainETL:
         projection = ['block_timestamp']
         cursor = self.transaction_collection.find(filter_, projection=projection).sort('block_number').limit(1)
         return list(cursor)
+
+    def get_number_calls(self, contract_address, from_timestamp, to_timestamp):
+        filter_ = {
+            'contract_address': contract_address,
+            'block_timestamp': {
+                '$gte': from_timestamp,
+                '$lte': to_timestamp
+            }
+        }
+        count_ = self.transaction_collection.count_documents(filter_)
+        return count_
