@@ -4,7 +4,7 @@ eth-abi==2.1.1
 click==8.0.1
 requests
 beautifulsoup4==4.11.1
-#multithread-parallel-processing==1.0.0
+multithread-parallel-processing==1.0.0
 overrides
 psycopg2
 pymongo==3.11.4
