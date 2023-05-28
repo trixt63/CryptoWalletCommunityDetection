@@ -9,6 +9,7 @@ overrides
 psycopg2
 pymongo==3.11.4
 python-dotenv==0.19.2
+python-cli-scheduler
 QueryStateLib
 selenium==4.6.0
 SQLAlchemy~=1.4.46
