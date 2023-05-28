@@ -40,7 +40,7 @@ class LPOwnersJob(SchedulerJob):
 
     def _execute(self, *args, **kwargs):
         # get lp_addresses
-        for pair_id in range(22000, self._latest_pair_id, PAIR_ID_BATCH_SIZE):
+        for pair_id in range(0, self._latest_pair_id, PAIR_ID_BATCH_SIZE):
             logger.info(f"Getting lp owners from pair {pair_id} to {pair_id+PAIR_ID_BATCH_SIZE} / {self._latest_pair_id}")
             _cursor = self._importer.get_lps_by_pair_ids(chain_id=self.chain_id,
                                                          start_pair_id=pair_id,
