@@ -1,12 +1,15 @@
 from typing import List
+
+import pymongo
 from pymongo import MongoClient, UpdateOne
 
 from config import MongoDBConfig
-from constants.mongodb_constants import WALLETS_COL, CreatedPairEventsCollection
+# from constants.mongodb_constants import WALLETS_COL, CreatedPairEventsCollection
 from utils.logger_utils import get_logger
 from utils.format_utils import snake_to_lower_camel
 
 logger = get_logger('MongoDB')
+WALLETS_COL = 'lpOwners'
 
 
 class MongoDB:
@@ -18,7 +21,7 @@ class MongoDB:
         self.connection = MongoClient(connection_url)
 
         self._db = self.connection[MongoDBConfig.DATABASE]
-        self.lp_tokens_col = self._db['elite_lp_tokens']
+        self.lp_tokens_col = self._db['lpTokens']
         self.wallets_col = self._db[WALLETS_COL]
 
         self._create_index()
@@ -83,3 +86,32 @@ class MongoDB:
         _filter = {f"{field_id}.{project_id}": chain_id}
         _count = self.wallets_col.count_documents(_filter)
         return _count
+    # end analysis #############
+
+    # for LP pair
+    def get_latest_pair_id(self, chain_id: str):
+        filter_ = {'chainId': chain_id}
+        latest_pair = self.lp_tokens_col.find_one(filter_, sort=[("pairId", pymongo.DESCENDING)])
+        return latest_pair['pairId']
+
+    def get_lps_by_pair_ids(self, chain_id, start_pair_id, end_pair_id):
+        filter_ = {
+            'chainId': chain_id,
+            'pairId': {
+                '$gte': start_pair_id,
+                '$lt': end_pair_id
+            }
+        }
+        cursor = self.lp_tokens_col.find(filter_)
+        return cursor
+
+    def get_pair_created_event(self, chain_id, address):
+        _chains_mapping = {
+            '0x38': 'bsc',
+            '0x1': 'ethereum',
+            '0xfa': 'fantom'
+        }
+        pair_created_col = self._db[f'pair_created_events_{_chains_mapping[chain_id]}']
+        filter_ = {'pair': address}
+        cursor = pair_created_col.find_one(filter_)
+        return cursor

@@ -1,4 +1,4 @@
-WALLETS_COL = "depositWallets"  # should be taggedWallets
+# WALLETS_COL = "depositWallets"  # should be taggedWallets
 
 
 class CreatedPairEventsCollection:

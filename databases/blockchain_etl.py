@@ -141,20 +141,9 @@ class BlockchainETL:
             logger.exception(ex)
         return None
 
-    def get_the_first_tx(self, address):
+    def get_number_calls_to_address(self, to_address, from_timestamp, to_timestamp):
         filter_ = {
-            "$or": [
-                {"from_address": address},
-                {"to_address": address}
-            ]
-        }
-        projection = ['block_timestamp']
-        cursor = self.transaction_collection.find(filter_, projection=projection).sort('block_number').limit(1)
-        return list(cursor)
-
-    def get_number_calls(self, contract_address, from_timestamp, to_timestamp):
-        filter_ = {
-            'contract_address': contract_address,
+            'to_address': to_address,
             'block_timestamp': {
                 '$gte': from_timestamp,
                 '$lte': to_timestamp
@@ -162,3 +151,8 @@ class BlockchainETL:
         }
         count_ = self.transaction_collection.count_documents(filter_)
         return count_
+
+    def get_transaction_by_hash(self, transaction_hash):
+        filter_ = {'_id': f"transaction_{transaction_hash}"}
+        cursor = self.transaction_collection.find_one(filter_)
+        return cursor

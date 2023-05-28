@@ -26,10 +26,12 @@ logger = get_logger('Exchange Deposit wallet')
 @click.option('-l', '--last-synced-file', default='last_synced.txt', show_default=True, type=str, help='')
 @click.option('-s', '--start-time', default=None, show_default=True, type=int, help='Start timestamp')
 @click.option('-e', '--end-time', type=int, default=None, show_default=True, help='End timestamp')
-@click.option('-p', '--period', type=int, default=TimeConstants.A_HOUR, show_default=True, help='Time period')
+@click.option('-p', '--period', type=int, default=TimeConstants.A_HOUR, show_default=True,
+              help='Time period for each worker to process')
 @click.option('-w', '--max-workers', default=8, show_default=True, type=int, help='The number of workers')
 @click.option('-c', '--chain', default='bsc', show_default=True, type=str, help='Network name example bsc or polygon')
-@click.option('--interval', default=TimeConstants.A_DAY, show_default=True, type=int, help='Interval to repeat execute')
+@click.option('--interval', default=TimeConstants.A_DAY, show_default=True, type=int,
+              help='Interval to repeat the job')
 @click.option('--source', default=None, show_default=True, type=str, multiple=True, help='Source to get data')
 def exchange_deposit_wallets(last_synced_file, start_time, end_time, period, max_workers, chain, interval, source):
     """Get exchange trading information."""
@@ -91,9 +93,8 @@ class ExchangeWallets(CLIJob):
 
     def _execute(self, *args, **kwargs):
         job = ExchangeDepositWalletsJob(
-            _db=self._db,
-            _blockchain_etl=self._blockchain_etl,
-            klg=self._klg_db,
+            transfer_event_db=self._db,
+            blockchain_etl=self._blockchain_etl,
             exchange_wallets=self.exchange_wallets,
             chain_id=self.chain_id,
             start_timestamp=self.start_timestamp, end_timestamp=self.end_time, period=self.period,
