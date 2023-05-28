@@ -40,7 +40,7 @@ class LPOwnersJob(SchedulerJob):
 
     def _execute(self, *args, **kwargs):
         # get lp_addresses
-        for pair_id in range(0, self._latest_pair_id, PAIR_ID_BATCH_SIZE):
+        for pair_id in range(22000, self._latest_pair_id, PAIR_ID_BATCH_SIZE):
             logger.info(f"Getting lp owners from pair {pair_id} to {pair_id+PAIR_ID_BATCH_SIZE} / {self._latest_pair_id}")
             _cursor = self._importer.get_lps_by_pair_ids(chain_id=self.chain_id,
                                                          start_pair_id=pair_id,
@@ -48,23 +48,28 @@ class LPOwnersJob(SchedulerJob):
             lp_contracts = {datum['address']: datum['dex'] for datum in _cursor}
 
             for lp_addr, dex_id in lp_contracts.items():
-                # get pair creation event of the addresses
-                pair_created_event = self._importer.get_pair_created_event(chain_id=self.chain_id, address=lp_addr)
-                tx_hash = pair_created_event['transaction_hash']
-                # get transaction with to_address in lp_addresses
-                tx = self._transactions_db.get_transaction_by_hash(transaction_hash=tx_hash)
-                lp_owner_addr = tx.get('from_address')
-                # add wallet
-                if lp_owner_addr in self._wallets:
-                    self._wallets[lp_owner_addr].add_project(project_id=dex_id,
-                                                             chain_id=self.chain_id,
-                                                             address=lp_addr)
-                else:
-                    new_lp_owner_wallets = WalletOwnLP(lp_owner_addr)
-                    new_lp_owner_wallets.add_project(project_id=dex_id,
-                                                     chain_id=self.chain_id,
-                                                     address=lp_addr)
-                    self._wallets[lp_owner_addr] = new_lp_owner_wallets
+                try:
+                    # get pair creation event of the addresses
+                    pair_created_event = self._importer.get_pair_created_event(chain_id=self.chain_id, address=lp_addr)
+                    tx_hash = pair_created_event['transaction_hash']
+                    # get transaction with to_address in lp_addresses
+                    tx = self._transactions_db.get_transaction_by_hash(transaction_hash=tx_hash)
+                    lp_owner_addr = tx.get('from_address')
+                    # add wallet
+                    if lp_owner_addr in self._wallets:
+                        self._wallets[lp_owner_addr].add_project(project_id=dex_id,
+                                                                 chain_id=self.chain_id,
+                                                                 address=lp_addr)
+                    else:
+                        new_lp_owner_wallets = WalletOwnLP(lp_owner_addr)
+                        new_lp_owner_wallets.add_project(project_id=dex_id,
+                                                         chain_id=self.chain_id,
+                                                         address=lp_addr)
+                        self._wallets[lp_owner_addr] = new_lp_owner_wallets
+
+                except Exception as ex:
+                    logger.warning(f"Error at pair {lp_addr}: {ex}")
+                    continue
 
             logger.info(f"Got {len(self._wallets)} lp owners of "
                         f"{pair_id+PAIR_ID_BATCH_SIZE} / {self._latest_pair_id}")
