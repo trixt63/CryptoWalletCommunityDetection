@@ -12,9 +12,9 @@ from services.crawlers.dextools_crawler import DEXToolsCrawler
 from utils.logger_utils import get_logger
 from utils.retry_handler import retry_handler
 
-LP_PAIRS_BALANCE_THRESHOLD = 1e5
-DEXTOOLS_PAGE_NUMBER_LIMIT = 5
-logger = get_logger('DEX traders Collector Job')
+LP_PAIRS_BALANCE_THRESHOLD = 1e5  # only get LP contracts with balance above this threshold
+DEXTOOLS_PAGE_NUMBER_LIMIT = 50
+logger = get_logger('LP traders collector Job')
 
 
 class DexTradersCollectorJob(CLIJob):
