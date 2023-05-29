@@ -13,7 +13,8 @@ class WalletTradeLP(Wallet):
         self.add_tags(WalletTags.dex_trader)
 
     # @override
-    def add_project(self, project: Project):
+    def add_project(self, project_id, chain_id, address):
+        project = Project(project_id, chain_id, address)
         if project.project_id in self.traded_lps:
             self.traded_lps[project.project_id].add_deployments(project.deployments)
         else:

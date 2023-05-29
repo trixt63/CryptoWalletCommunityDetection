@@ -9,7 +9,7 @@ from utils.logger_utils import get_logger
 from utils.format_utils import snake_to_lower_camel
 
 logger = get_logger('MongoDB')
-WALLETS_COL = 'lpOwners'
+WALLETS_COL = 'test_lpTraders'
 
 
 class MongoDB:
@@ -35,6 +35,7 @@ class MongoDB:
             wallet_updates_bulk = []
             for wallet in wallets:
                 wallet['_id'] = wallet['address']
+
                 # pop all information besides data about lendings/dex/deposit/...
                 wallet_base_data = {
                     '_id': wallet.pop('_id'),
@@ -104,6 +105,17 @@ class MongoDB:
         }
         cursor = self.lp_tokens_col.find(filter_)
         return cursor
+
+    def get_pair_by_balance_range(self, chain_id, upper=None, lower=0):
+        _filter = {'chainId': chain_id}
+        _balance_filter = {}
+        if upper:
+            _balance_filter['$lt'] = upper / 2
+        if lower:
+            _balance_filter['$gte'] = lower / 2
+        if _balance_filter:
+            _filter.update({"pairBalancesInUSD.token0": _balance_filter})
+        return self.lp_tokens_col.find(filter=_filter)
 
     def get_pair_created_event(self, chain_id, address):
         _chains_mapping = {

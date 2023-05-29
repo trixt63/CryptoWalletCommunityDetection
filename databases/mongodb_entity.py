@@ -37,11 +37,12 @@ class MongoDBEntity:
         data = self._multichain_wallets_col.find(_filter, _projection)
         return data
 
-    def get_lp_contracts(self, chain_id):
-        dex_names = LPConstants.CHAIN_DEX_MAPPINGS.get(chain_id)
-        data = None
-        if dex_names:
-            _filter = {'name': {"$in": dex_names}}
-            _projection = {'address': 1, 'name': 1, 'numberOfThisMonthCalls': 1}
-            data = self._smart_contracts_col.find(_filter, _projection)
-        return data
+    # Old function to get filtered lp contracts for dextools crawler
+    # def get_lp_contracts(self, chain_id):
+    #     dex_names = LPConstants.CHAIN_DEX_MAPPINGS.get(chain_id)
+    #     data = None
+    #     if dex_names:
+    #         _filter = {'name': {"$in": dex_names}}
+    #         _projection = {'address': 1, 'name': 1, 'numberOfThisMonthCalls': 1}
+    #         data = self._smart_contracts_col.find(_filter, _projection)
+    #     return data

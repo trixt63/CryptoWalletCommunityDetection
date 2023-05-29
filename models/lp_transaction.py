@@ -1,12 +1,12 @@
 import hashlib
 
 
-class DexTransaction:
-    def __init__(self, maker_address: str, transaction_hash: str, is_bot: bool):
-        # self._timestamp = timestamp
+class LPTransaction:
+    def __init__(self, maker_address: str, transaction_hash: str, is_bot: bool, timestamp=None):
         self.maker_address = maker_address
         self.tx_hash = transaction_hash
         self.is_bot = is_bot
+        self._timestamp = timestamp
 
     def __eq__(self, other):
         return self.tx_hash == other.tx_hash
