@@ -92,16 +92,16 @@ class DEXToolsCrawler:
     def _get_next_page_button(driver):
         """Get the next page button"""
         li_nth_child = 8
+        next_button_selenium = None
         while li_nth_child >= 0:
             try:
                 css_selector = f'.pager > li:nth-child({str(li_nth_child)}) > a:nth-child(1)'
                 next_button_selenium = driver.find_element(By.CSS_SELECTOR, css_selector)
-                return next_button_selenium
             except selenium.common.exceptions.NoSuchElementException:
                 li_nth_child -= 1
 
         logger.exception("Cannot find Next page button")
-        return None
+        return next_button_selenium
 
     @staticmethod
     def _write_log_file(contract_address: str, oldest_time: str):
