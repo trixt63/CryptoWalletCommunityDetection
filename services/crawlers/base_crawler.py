@@ -26,28 +26,9 @@ class BaseCrawler:
         # Max number of retry times
         self.max_retry_times = max_retry_times
 
-    def _get_url_soup(self, url):
-        # Read the html of the page
-        if self.get_url_soup_calls <= self.soup_calls_limit:
-            self.get_url_soup_calls += 1
-        else:
-            time.sleep(self.sleep_time)
-            # Reset get_url_soup_calls
-            self.get_url_soup_calls = 1
-
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36",
-        }
-        response = requests.get(url, headers=headers)
-
-        status = response.status_code
-        content = response.text
-        page_soup = soup(content, "html.parser")
-        return page_soup, status
-
     def _fetch_data(self, url, func, *args, **kwargs):  # why is this a private method??
         """
-        Function that use Soup to crawl data from an url with helper function func
+        using Soup to crawl data from an url with helper function func
 
         Args:
             url: Specify the url to be scraped
@@ -71,9 +52,28 @@ class BaseCrawler:
             retry_time += 1
         return data
 
+    def _get_url_soup(self, url):
+        # Read the html of the page
+        if self.get_url_soup_calls <= self.soup_calls_limit:
+            self.get_url_soup_calls += 1
+        else:
+            time.sleep(self.sleep_time)
+            # Reset get_url_soup_calls
+            self.get_url_soup_calls = 1
+
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36",
+        }
+        response = requests.get(url, headers=headers)
+
+        status = response.status_code
+        content = response.text
+        page_soup = soup(content, "html.parser")
+        return page_soup, status
+
     def use_chrome_driver(self, url, handler_func, **kwargs):
         """
-        Function that use Selenium to crawl data from an url with helper function handler_func
+        using Selenium to crawl data from an url with helper function handler_func
 
         Args:
             url: Specify the url to be scraped
@@ -100,6 +100,7 @@ class BaseCrawler:
         chrome_options = Options()
         chrome_options.add_argument('--headless')
         chrome_options.add_argument('user-agent=Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/97.0.4692.71 Mobile Safari/537.36')
+
         driver = webdriver.Chrome(options=chrome_options)
         return driver
 
