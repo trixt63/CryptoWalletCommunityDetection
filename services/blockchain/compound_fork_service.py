@@ -31,12 +31,13 @@ class CompoundForkService:
 
 if __name__ == '__main__':
     import json
-    from constants.lending.lending_pools_info.ethereum.compound_eth import COMPOUND_ETH
+    # from constants.lending.lending_pools_info.ethereum.compound_eth import COMPOUND_ETH
+    from constants.network_constants import ETH_COMPOUND_ADDRESS
     from artifacts.abis.lending_pool.cream_comptroller_abi import CREAM_COMPTROLLER_ABI
 
     service = CompoundForkService(provider_uri="https://rpc.ankr.com/eth")
     ctokens = service.get_all_markets(
-        comptroller=COMPOUND_ETH["comptrollerAddress"],
+        comptroller=ETH_COMPOUND_ADDRESS,
         comptroller_abi=CREAM_COMPTROLLER_ABI
     )
     with open("compound_eth.json", "w") as f:
