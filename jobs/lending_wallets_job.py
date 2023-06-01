@@ -37,6 +37,7 @@ class LendingWalletsJob(SchedulerJob):
         del self.lending_address_to_pool_mapping
 
     def _export_flagged_wallets(self, flagged: int):
+        logger.info(f"Exporting wallet flag {flagged} / {self.current_batch_id}")
         batch_lending_wallets: List[WalletLending] = []
         wallets_data = self._klg.get_multichain_wallets_lendings(flagged)
 
