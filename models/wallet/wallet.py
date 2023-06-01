@@ -1,11 +1,15 @@
+from typing import Dict
+
 from constants.tag_constants import WalletTags
-from models.project import Project
+from models.protocol import Protocol
 
 
 class Wallet:
-    def __init__(self, address):
+    def __init__(self, address, tag=None):
         self.address = address
         self.tags = list()
+        if tag:
+            self.add_tags(tag)
 
     def add_tags(self, new_tag: str):
         # if new_tag not in WalletTags.all_wallet_tags:

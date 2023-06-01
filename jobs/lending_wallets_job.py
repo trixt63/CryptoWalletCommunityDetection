@@ -1,32 +1,38 @@
 import time
+from cli_scheduler.scheduler_job import SchedulerJob
+from overrides import override
 
 from databases.mongodb_entity import MongoDBEntity
 from databases.mongodb import MongoDB
 from constants.tag_constants import WalletTags
 from models.wallet.wallet_lending import WalletLending
-from models.project import Project
 from utils.logger_utils import get_logger
 
 logger = get_logger('Lending Wallets Exporter')
 
 
-class LendingWalletsJob:
-    def __init__(self, n_days=30):
+class LendingWalletsJob(SchedulerJob):
+    def __init__(self, scheduler,
+                 n_days=30):
+        super().__init__(scheduler)
         self.n_days = n_days
-        self._klg = MongoDBEntity()
-        self._mongodb = MongoDB()
 
         # self._first_timestamp = None
         self.current_batch_id = None
 
-    def run(self):
-        # current_time = int(time.time())
-        # self._first_timestamp = round_timestamp(current_time - self.n_days*TimeConstants.A_DAY, TimeConstants.A_DAY)
-        self._export_lending_wallets()
+    @override
+    def _pre_start(self):
+        self._klg = MongoDBEntity()
+        self._mongodb = MongoDB()
 
-    def _export_lending_wallets(self):
+    def _start(self):
+        self.current_batch_id = None
+
+    @override
+    def _execute(self):
         logger.info('Getting lending wallet addresses from KLG')
         self.current_batch_id = self._klg.get_current_multichain_wallets_flagged_state()
+
         for flagged in range(1, self.current_batch_id+1):
             self._export_flagged_wallets(flagged)
 
@@ -45,12 +51,11 @@ class LendingWalletsJob:
                 for _pool_data in lending_pools_data:
                     chain_id = _pool_data['chain_id']
                     pool_address = _pool_data['address']
-                    pool_id = _pool_data['name']
+                    pool_id = _pool_data['pool_id']
 
-                    lending_pool = Project(project_id=pool_id,
-                                           chain_id=chain_id,
-                                           address=pool_address)
-                    new_lending_wallet.add_project(lending_pool)
+                    new_lending_wallet.add_protocol(protocol_id=pool_id,
+                                                    chain_id=chain_id,
+                                                    address=pool_address)
 
                 batch_lending_wallets.append(new_lending_wallet)
 
@@ -61,6 +66,7 @@ class LendingWalletsJob:
         if wallet_lendings_data:
             recent_lending_pools = list()
             for lending_pool_key, lending_pool_data in wallet_lendings_data.items():
+                # # only get deposit/borrow log of the nearest n_days
                 # deposit_logs = lending_pool_data['depositChangeLogs']
                 # deposit_latest_timestamp = max(deposit_logs.keys())
                 # borrow_logs = lending_pool_data['borrowChangeLogs']
@@ -70,7 +76,7 @@ class LendingWalletsJob:
                 recent_lending_pools.append({
                     'chain_id': lending_pool_key.split('_')[0],
                     'address': lending_pool_key.split('_')[1],
-                    'name': self._get_lending_pool_name(lending_pool_data)
+                    'pool_id': self._get_lending_pool_id(lending_pool_data)
                 })
             return recent_lending_pools
         else:
@@ -83,5 +89,5 @@ class LendingWalletsJob:
             wallets_data.append(wallet_dict)
         self._mongodb.update_wallets(wallets_data)
 
-    def _get_lending_pool_name(self, lending_pool_data):
+    def _get_lending_pool_id(self, lending_pool_data):
         return lending_pool_data['name']

@@ -2,23 +2,23 @@ from typing import Dict
 from overrides import override
 
 from models.wallet.wallet import Wallet
-from models.project import Project
+from models.protocol import Protocol
 from constants.tag_constants import WalletTags
 
 
 class WalletOwnLP(Wallet):
     def __init__(self, address):
         super().__init__(address)
-        self.owned_lps: Dict[str, Project] = dict()
         self.add_tags(WalletTags.lp_owner)
+        self.owned_lps: Dict[str, Protocol] = dict()
 
     # @override
     def add_project(self, project_id, chain_id, address):
-        project = Project(project_id, chain_id, address)
-        if project.project_id in self.owned_lps:
-            self.owned_lps[project.project_id].add_deployments(project.deployments)
+        project = Protocol(project_id, chain_id, address)
+        if project.protocol_id in self.owned_lps:
+            self.owned_lps[project.protocol_id].add_deployments(project.deployments)
         else:
-            self.owned_lps[project.project_id] = project
+            self.owned_lps[project.protocol_id] = project
 
     @override
     def to_dict(self):

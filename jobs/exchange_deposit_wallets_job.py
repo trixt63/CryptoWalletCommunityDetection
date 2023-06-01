@@ -10,7 +10,7 @@ from databases.postgresql import PostgresDB
 from databases.mongodb import MongoDB
 from models.blocks import Blocks
 from models.wallet.wallet_deposit_exchange import WalletDepositExchange
-from models.project import Project
+from models.project import Protocol
 from utils.logger_utils import get_logger
 
 logger = get_logger('Exchange Deposit Wallet Job')
@@ -108,9 +108,9 @@ class ExchangeDepositWalletsJob(BaseJob):
 
             for item in items:
                 from_address = item['from_address']
-                hot_wallet = Project(project_id=exchange_id,
-                                     address=from_address,
-                                     chain_id=self.chain_id)
+                hot_wallet = Protocol(project_id=exchange_id,
+                                      address=from_address,
+                                      chain_id=self.chain_id)
                 if from_address in self._wallets_by_address:
                     # self._wallets_by_address[from_address].deposited_exchanges.add(exchange_id)
                     self._wallets_by_address[from_address].add_project(hot_wallet)
