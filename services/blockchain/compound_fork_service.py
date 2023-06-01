@@ -31,7 +31,6 @@ class CompoundForkService:
 
 if __name__ == '__main__':
     import json
-    # from constants.lending.lending_pools_info.ethereum.compound_eth import COMPOUND_ETH
     from constants.network_constants import ETH_COMPOUND_ADDRESS
     from artifacts.abis.lending_pool.cream_comptroller_abi import CREAM_COMPTROLLER_ABI
 

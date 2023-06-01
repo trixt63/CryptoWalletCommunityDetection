@@ -1,5 +1,4 @@
 from typing import Dict
-from overrides import override
 
 from models.wallet.wallet import Wallet
 from models.protocol import Protocol
@@ -12,7 +11,6 @@ class WalletTradeLP(Wallet):
         self.traded_lps: Dict[str, Protocol] = dict()
         self.add_tags(WalletTags.dex_trader)
 
-    # @override
     def add_project(self, project_id, chain_id, address):
         project = Protocol(project_id, chain_id, address)
         if project.protocol_id in self.traded_lps:
@@ -20,7 +18,6 @@ class WalletTradeLP(Wallet):
         else:
             self.traded_lps[project.protocol_id] = project
 
-    @override
     def to_dict(self):
         returned_dict = super().to_dict()
 

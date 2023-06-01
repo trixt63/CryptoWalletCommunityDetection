@@ -1,5 +1,6 @@
 from typing import Dict
 
+from constants.tag_constants import WalletTags
 from models.wallet.wallet import Wallet
 from models.protocol import Protocol
 
@@ -8,6 +9,7 @@ class WalletLending(Wallet):
     def __init__(self, address):
         super().__init__(address)
         self._lending_pools: Dict[str, Protocol] = dict()
+        self.add_tags(WalletTags.lending_wallet)
 
     def add_protocol(self, protocol_id, chain_id, address):
         protocol = Protocol(protocol_id, chain_id, address)

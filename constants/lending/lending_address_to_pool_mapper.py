@@ -4,8 +4,7 @@ from constants.network_constants import Chains, Networks
 from services.blockchain.compound_fork_service import CompoundForkService
 
 
-class AddressToLendingMapper:
-
+class LendingAddressToPoolMapper:
     # mapping
     def get_mapping(self):
         address_to_pool_mapping = dict()
@@ -74,6 +73,6 @@ class AddressToLendingMapper:
 
 
 if __name__ == '__main__':
-    mapper = AddressToLendingMapper()
+    mapper = LendingAddressToPoolMapper()
     result = mapper.get_mapping()
     print(result)
