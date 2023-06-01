@@ -39,5 +39,5 @@ if __name__ == '__main__':
         comptroller=COMPOUND_ETH["comptrollerAddress"],
         comptroller_abi=CREAM_COMPTROLLER_ABI
     )
-    with open("compound_bsc.json", "w") as f:
+    with open("compound_eth.json", "w") as f:
         f.write(json.dumps(ctokens, indent=2))

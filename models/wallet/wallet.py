@@ -19,9 +19,6 @@ class Wallet:
         if new_tag not in self.tags:
             self.tags.append(new_tag)
 
-    # def add_project(self, project: Project):
-    #     pass
-
     def to_dict(self):
         returned_dict = {
             'address': self.address,
