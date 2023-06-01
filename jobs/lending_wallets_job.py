@@ -70,7 +70,7 @@ class LendingWalletsJob:
                 recent_lending_pools.append({
                     'chain_id': lending_pool_key.split('_')[0],
                     'address': lending_pool_key.split('_')[1],
-                    'name': lending_pool_data['name']
+                    'name': self._get_lending_pool_name(lending_pool_data)
                 })
             return recent_lending_pools
         else:
@@ -82,3 +82,6 @@ class LendingWalletsJob:
             wallet_dict = wallet.to_dict()
             wallets_data.append(wallet_dict)
         self._mongodb.update_wallets(wallets_data)
+
+    def _get_lending_pool_name(self, lending_pool_data):
+        return lending_pool_data['name']
