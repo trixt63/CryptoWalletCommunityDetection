@@ -40,16 +40,22 @@ def get_file_handle(filename, mode='w', binary=False, create_parent_dirs=True):
     return fh
 
 
-def init_last_synced_file(start_block, last_synced_block_file):
-    if os.path.isfile(last_synced_block_file):
+def write_to_file(file, content):
+    with smart_open(file, 'w') as file_handle:
+        file_handle.write(content)
+
+
+# Utils for last_synced_files
+def init_last_synced_file(value, last_synced_file):
+    if os.path.isfile(last_synced_file):
         raise ValueError(
-            '{} should not exist if --start-block option is specified. '
-            'Either remove the {} file or the --start-block option.'.format(last_synced_block_file, last_synced_block_file))
-    write_last_synced_file(last_synced_block_file, start_block)
+            f'{last_synced_file} should not exist if any --start option is specified. '
+            f'Either remove the {last_synced_file} file or the --start-block option.')
+    write_last_synced_file(last_synced_file, value)
 
 
-def write_last_synced_file(file, last_synced_block):
-    write_to_file(file, str(last_synced_block) + '\n')
+def write_last_synced_file(file, last_synced_value):
+    write_to_file(file, str(last_synced_value) + '\n')
 
 
 def read_last_synced_file(file):
@@ -57,6 +63,15 @@ def read_last_synced_file(file):
         return int(file_handle.read())
 
 
-def write_to_file(file, content):
-    with smart_open(file, 'w') as file_handle:
-        file_handle.write(content)
+# Utils for log files
+def init_log_file(log_file):
+    if os.path.exists(log_file):
+        os.remove(log_file)
+
+
+def append_log_file(line, log_file):
+    _file = open(log_file, 'a+')
+    _file.write(f"{line}\n")
+    _file.close()
+
+

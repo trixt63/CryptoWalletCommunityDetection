@@ -23,7 +23,7 @@ class WalletDeployLP(Wallet):
 
         if len(self.deployed_lps):
             deployed_lps = {dex_id: lp_obj.to_deployments_list()
-                         for dex_id, lp_obj in self.deployed_lps.items()}
+                            for dex_id, lp_obj in self.deployed_lps.items()}
             returned_dict['deployedLPs'] = deployed_lps
 
         return returned_dict
