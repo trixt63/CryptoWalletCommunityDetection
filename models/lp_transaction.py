@@ -1,7 +1,5 @@
-import hashlib
-
-
 class LPTransaction:
+    """Model for DexTools' crawled transactions"""
     def __init__(self, maker_address: str, transaction_hash: str, is_bot: bool, timestamp=None):
         self.maker_address = maker_address
         self.tx_hash = transaction_hash
