@@ -6,7 +6,7 @@ from web3 import Web3
 
 from databases.blockchain_etl import BlockchainETL
 from databases.mongodb import MongoDB
-from models.wallet.wallet_own_lp import WalletOwnLP
+from models.wallet.wallet_own_lp import WalletDeployLP
 from utils.logger_utils import get_logger
 
 logger = get_logger('LP Deployers job')
@@ -37,7 +37,7 @@ class LPDeployersJob(SchedulerJob):
             os.remove(self._missing_tx_file_path)
 
     def _start(self):
-        self._wallets: Dict[str, WalletOwnLP] = dict()
+        self._wallets: Dict[str, WalletDeployLP] = dict()
         # get latest pair id & batches
         self._latest_pair_id = self._importer.get_latest_pair_id(chain_id=self.chain_id)
 
@@ -69,14 +69,14 @@ class LPDeployersJob(SchedulerJob):
                         self._write_missing_tx_file(tx_hash, missing_block_number)
                     # add wallet
                     if lp_owner_addr in self._wallets:
-                        self._wallets[lp_owner_addr].add_project(project_id=dex_id,
-                                                                 chain_id=self.chain_id,
-                                                                 address=lp_addr)
+                        self._wallets[lp_owner_addr].add_protocol(protocol_id=dex_id,
+                                                                  chain_id=self.chain_id,
+                                                                  address=lp_addr)
                     else:
-                        new_lp_owner_wallets = WalletOwnLP(lp_owner_addr)
-                        new_lp_owner_wallets.add_project(project_id=dex_id,
-                                                         chain_id=self.chain_id,
-                                                         address=lp_addr)
+                        new_lp_owner_wallets = WalletDeployLP(lp_owner_addr)
+                        new_lp_owner_wallets.add_protocol(protocol_id=dex_id,
+                                                          chain_id=self.chain_id,
+                                                          address=lp_addr)
                         self._wallets[lp_owner_addr] = new_lp_owner_wallets
 
                 except Exception as ex:

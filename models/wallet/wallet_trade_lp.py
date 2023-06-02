@@ -9,7 +9,7 @@ class WalletTradeLP(Wallet):
     def __init__(self, address):
         super().__init__(address)
         self.traded_lps: Dict[str, Protocol] = dict()
-        self.add_tags(WalletTags.dex_trader)
+        self.add_tags(WalletTags.lp_trader)
 
     def add_project(self, project_id, chain_id, address):
         project = Protocol(project_id, chain_id, address)

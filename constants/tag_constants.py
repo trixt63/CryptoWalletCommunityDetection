@@ -7,13 +7,13 @@ class WalletTags:
     lending_wallet = 'lending_wallet'
 
     # dex wallets
-    lp_owner = 'lp_owner'
+    lp_deployer = 'lp_deployer'
     lp_holder = 'lp_holder'
-    dex_trader = 'dex_trader'
+    lp_trader = 'lp_trader'
     bot = 'bot'
 
     # nft wallets
     nft_wallet = 'nft_wallet'
 
     all_wallet_tags = {centralized_exchange_wallet, centralized_exchange_deposit_wallet, lending_wallet, nft_wallet,
-                       lp_owner, lp_owner, dex_trader, bot}
+                       lp_deployer, lp_deployer, lp_trader, bot}
