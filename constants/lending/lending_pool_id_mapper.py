@@ -1,12 +1,16 @@
+from typing import Dict
+
 from artifacts.abis.lending_pool.cream_comptroller_abi import CREAM_COMPTROLLER_ABI
 from constants import network_constants
 from constants.network_constants import Chains, Networks
 from services.blockchain.compound_fork_service import CompoundForkService
 
 
-class LendingAddressToPoolMapper:
-    # mapping
-    def get_mapping(self):
+class LendingPoolIdMapper:
+    """Map chainId_address to lending pool id
+    e.g. '0x1_0x7d2768de32b0b80b7a3454c06bdac94a69ddc7a9': 'aave'
+    """
+    def map(self) -> Dict[str, str]:
         address_to_pool_mapping = dict()
 
         # Aave:
@@ -73,6 +77,6 @@ class LendingAddressToPoolMapper:
 
 
 if __name__ == '__main__':
-    mapper = LendingAddressToPoolMapper()
-    result = mapper.get_mapping()
+    mapper = LendingPoolIdMapper()
+    result = mapper.map()
     print(result)

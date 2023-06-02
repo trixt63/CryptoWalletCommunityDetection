@@ -1,7 +1,7 @@
 from typing import List
 from cli_scheduler.scheduler_job import SchedulerJob
 
-from constants.lending.lending_address_to_pool_mapper import LendingAddressToPoolMapper
+from constants.lending.lending_pool_id_mapper import LendingPoolIdMapper
 from databases.mongodb_entity import MongoDBEntity
 from databases.mongodb import MongoDB
 from models.wallet.wallet_lending import WalletLending
@@ -24,7 +24,7 @@ class LendingWalletsJob(SchedulerJob):
 
     def _start(self):
         self.current_batch_id = None
-        self.lending_address_to_pool_mapping = LendingAddressToPoolMapper().get_mapping()
+        self.lending_pool_id_mapper = LendingPoolIdMapper().map()
 
     def _execute(self):
         logger.info('Getting lending wallet addresses from KLG')
@@ -32,9 +32,6 @@ class LendingWalletsJob(SchedulerJob):
 
         for flagged in range(1, self.current_batch_id+1):
             self._export_flagged_wallets(flagged)
-
-    def _end(self):
-        del self.lending_address_to_pool_mapping
 
     def _export_flagged_wallets(self, flagged: int):
         logger.info(f"Exporting wallet flag {flagged} / {self.current_batch_id}")
@@ -67,7 +64,7 @@ class LendingWalletsJob(SchedulerJob):
                 # borrow_latest_timestamp = max(borrow_logs.keys())
                 # if (self._first_timestamp <= int(deposit_latest_timestamp) or
                 #         self._first_timestamp <= int(borrow_latest_timestamp)):
-                pool_id = self.lending_address_to_pool_mapping.get(lending_pool_key, None)
+                pool_id = self.lending_pool_id_mapper.get(lending_pool_key, None)
                 if pool_id:
                     extracted_lending_pools.append({
                         'chain_id': lending_pool_key.split('_')[0],
@@ -85,3 +82,6 @@ class LendingWalletsJob(SchedulerJob):
             wallet_dict = wallet.to_dict()
             wallets_data.append(wallet_dict)
         self._mongodb.update_wallets(wallets_data)
+
+    def _end(self):
+        del self.lending_pool_id_mapper
