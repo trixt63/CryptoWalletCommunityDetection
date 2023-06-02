@@ -4,36 +4,50 @@ from typing import Dict
 
 from multithread_processing.base_job import BaseJob
 
-from constants.tag_constants import WalletTags
 from databases.blockchain_etl import BlockchainETL
-# from databases.arangodb_klg import ArangoDB
-from databases.mongodb_entity import MongoDBEntity
 from databases.postgresql import PostgresDB
 from databases.mongodb import MongoDB
-# from exporters.arangodb_exporter import ArangoDBExporter
 from models.blocks import Blocks
 from models.wallet.wallet_deposit_exchange import WalletDepositExchange
-from models.project import Project
+from models.protocol import Protocol
 from utils.logger_utils import get_logger
 
 logger = get_logger('Exchange Deposit Wallet Job')
 
 
 class ExchangeDepositWalletsJob(BaseJob):
+    """Multithread job to get export wallets that deposit into hot wallets during a time interval (usually 1 day)
+    """
     def __init__(
             self,
-            _db: PostgresDB,
-            _blockchain_etl: BlockchainETL,
-            klg: MongoDBEntity,
+            transfer_event_db: PostgresDB,
+            blockchain_etl: BlockchainETL,
+            # klg: MongoDBEntity,
             exchange_wallets: dict,
             chain_id,
             start_timestamp, end_timestamp, period,
             batch_size, max_workers,
             sources=None
     ):
-        self._db = _db
-        self._blockchain_etl = _blockchain_etl
-        self._kgl = klg
+        """
+        Args:
+            self: Represent the instance of the class
+            transfer_event_db: database with transfer events
+            blockchain_etl: database with transactions data
+            exchange_wallets: dict: Define the wallets that belong to an exchange
+            chain_id: Specify the chain that we want to extract data from
+            start_timestamp: Set the start_timestamp of the data to be extracted
+            end_timestamp: Set the end time of the data to be extracted
+            period: Determine the time interval for each worker
+            batch_size: Set the number of work for each worker to process parallely
+            max_workers: Limit the number of workers that can be used to process the work_iterable
+            sources: Specify the source of the data
+        Doc Author:
+            Trinh Tung
+    """
+        self._db = transfer_event_db
+        self._blockchain_etl = blockchain_etl
+        # self._kgl = klg
 
         self._exporter = MongoDB()
 
@@ -66,7 +80,6 @@ class ExchangeDepositWalletsJob(BaseJob):
         gc.collect()
 
     def _execute_batch(self, works):
-        start_time = int(time.time())
         start_timestamp = works[0]
         end_timestamp = min(start_timestamp + self.period, self.end_timestamp)
         block_range = Blocks().block_numbers(self.chain_id, [start_timestamp, end_timestamp])
@@ -94,9 +107,9 @@ class ExchangeDepositWalletsJob(BaseJob):
 
             for item in items:
                 from_address = item['from_address']
-                hot_wallet = Project(project_id=exchange_id,
-                                     address=from_address,
-                                     chain_id=self.chain_id)
+                hot_wallet = Protocol(protocol_id=exchange_id,
+                                      address=from_address,
+                                      chain_id=self.chain_id)
                 if from_address in self._wallets_by_address:
                     # self._wallets_by_address[from_address].deposited_exchanges.add(exchange_id)
                     self._wallets_by_address[from_address].add_project(hot_wallet)

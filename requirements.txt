@@ -5,11 +5,12 @@ click==8.0.1
 requests
 beautifulsoup4==4.11.1
 multithread-parallel-processing==1.0.0
-selenium==4.6.0
-SQLAlchemy~=1.4.46
 psycopg2
 pymongo==3.11.4
 python-dotenv==0.19.2
+python-cli-scheduler
 QueryStateLib
+selenium==4.6.0
+SQLAlchemy~=1.4.46
 # python-arango==7.3.4
 # pg8000==1.13.2

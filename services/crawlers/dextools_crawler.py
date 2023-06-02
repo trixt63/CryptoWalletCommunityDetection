@@ -1,5 +1,7 @@
+import os
 import time
 from datetime import datetime
+from typing import Set
 
 from bs4 import BeautifulSoup as soup
 from selenium.webdriver.common.by import By
@@ -8,24 +10,29 @@ import selenium.common.exceptions
 from services.crawlers.base_crawler import BaseCrawler
 from utils.logger_utils import get_logger
 from utils.retry_handler import retry_handler
-from models.dex_transaction import DexTransaction
+from models.lp_transaction import LPTransaction
 
 logger = get_logger('DEXTools Crawler')
-
-PAGE_NUMBER_LIMIT = 60
+logger.setLevel(20)  # INFO or above
+LOG_FILE_PATH = '.data/dextools_oldest_transactions.txt'
 
 
 class DEXToolsCrawler:
-    def __init__(self):
+    def __init__(self, page_number_limit=60):
         self.crawler = BaseCrawler()
+        self.page_number_limit = page_number_limit
+        # delete log file
+        if os.path.exists(LOG_FILE_PATH):
+            os.remove(LOG_FILE_PATH)
 
     @retry_handler
-    def get_exchanges(self, chain_id, contract_address):
-        logger.info(f"Start crawl DEXTools of contract {contract_address} on chain {chain_id}")
-        _url = self._create_dextools_url(chain_id, contract_address)
-        return self.crawler.use_chrome_driver(_url, self._handler_exchanges)
+    def get_lp_transactions(self, chain_id, lp_address) -> Set[LPTransaction]:
+        logger.info(f"Crawling transactions of LP contract {lp_address} on chain {chain_id} from DEXTools")
+        _url = self._create_dextools_url(chain_id, lp_address)
 
-    def _handler_exchanges(self, driver):
+        return self.crawler.use_chrome_driver(_url, self._handler_exchanges, contract_address=lp_address)
+
+    def _handler_exchanges(self, driver, contract_address):
         time.sleep(5)
         driver.maximize_window()
         page_number = 1
@@ -36,6 +43,7 @@ class DEXToolsCrawler:
             table = page_soup.find('app-trade-history')
             rows = table.findAll('datatable-body-row')
             newly_crawled_transactions = set()
+            oldest_trade_date = ''
 
             for row in rows:
                 cols = row.find('div', {'class': 'datatable-row-center'}).findAll('datatable-body-cell')
@@ -45,24 +53,27 @@ class DEXToolsCrawler:
                 tx_link = cols[-1].findAll('a')[0].get('href')
                 is_bot = True if cols[-1].find('fa-icon') else False
 
-                newly_crawled_transactions.add(DexTransaction(
-                    # timestamp=int(datetime.strptime(trade_date, ' %Y-%m-%d %H:%M:%S ').timestamp()),
+                newly_crawled_transactions.add(LPTransaction(
                     maker_address=maker_link.split('/')[-1].lower(),
                     transaction_hash=tx_link.split('/')[-1].lower(),
-                    is_bot=is_bot
+                    is_bot=is_bot,
+                    # timestamp=int(datetime.strptime(trade_date, ' %b %d %H:%M:%S ').timestamp())
                 ))
+                oldest_trade_date = trade_date
 
             if newly_crawled_transactions.issubset(crawled_transactions):  # break if there are no new transactions
+                self._write_log_file(contract_address, oldest_trade_date)
                 break
             crawled_transactions = crawled_transactions.union(newly_crawled_transactions)
 
             # Click to next page
-            logger.info(f"Page: {page_number}. Number of tx crawled: {len(crawled_transactions)}")
+            logger.debug(f"Page: {page_number}. Number of tx crawled: {len(crawled_transactions)}")
             next_page_button = self._get_next_page_button(driver)
             driver.execute_script("arguments[0].click();", next_page_button)
             time.sleep(1)
             page_number += 1
-            if page_number > PAGE_NUMBER_LIMIT:
+            if page_number > self.page_number_limit:
+                self._write_log_file(contract_address, oldest_trade_date)
                 break
 
         return crawled_transactions
@@ -81,13 +92,19 @@ class DEXToolsCrawler:
     def _get_next_page_button(driver):
         """Get the next page button"""
         li_nth_child = 8
+        next_button_selenium = None
         while li_nth_child >= 0:
             try:
                 css_selector = f'.pager > li:nth-child({str(li_nth_child)}) > a:nth-child(1)'
                 next_button_selenium = driver.find_element(By.CSS_SELECTOR, css_selector)
-                return next_button_selenium
             except selenium.common.exceptions.NoSuchElementException:
                 li_nth_child -= 1
 
         logger.exception("Cannot find Next page button")
-        return None
+        return next_button_selenium
+
+    @staticmethod
+    def _write_log_file(contract_address: str, oldest_time: str):
+        log_file = open(LOG_FILE_PATH, "a+")
+        log_file.write(f"{contract_address}: {oldest_time}\n")
+        log_file.close()
