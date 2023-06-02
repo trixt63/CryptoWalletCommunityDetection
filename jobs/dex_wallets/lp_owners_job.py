@@ -1,7 +1,6 @@
 import gc
 import time
 from typing import Dict
-from overrides import override
 from cli_scheduler.scheduler_job import SchedulerJob
 
 from databases.blockchain_etl import BlockchainETL
