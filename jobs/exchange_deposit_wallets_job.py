@@ -105,17 +105,18 @@ class ExchangeDepositWalletsJob(BaseJob):
 
             for item in items:
                 from_address = item['from_address']
-                hot_wallet = Protocol(protocol_id=exchange_id,
-                                      address=from_address,
-                                      chain_id=self.chain_id)
                 if from_address in self._wallets_by_address:
                     # self._wallets_by_address[from_address].deposited_exchanges.add(exchange_id)
-                    self._wallets_by_address[from_address].add_project(hot_wallet)
+                    self._wallets_by_address[from_address].add_protocol(protocol_id=exchange_id,
+                                                                        address=from_address,
+                                                                        chain_id=self.chain_id)
                 else:
                     new_deposit_wallet = WalletDepositExchange(address=from_address)
                     # new_deposit_wallet.add_tags(WalletTags.centralized_exchange_deposit_wallet)
                     self._wallets_by_address[from_address] = new_deposit_wallet
-                    self._wallets_by_address[from_address].add_project(hot_wallet)
+                    self._wallets_by_address[from_address].add_protocol(protocol_id=exchange_id,
+                                                                        address=from_address,
+                                                                        chain_id=self.chain_id)
 
     def _export_wallets(self):
         """Export exchange deposit wallets with tag"""
