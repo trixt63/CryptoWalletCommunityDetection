@@ -14,6 +14,7 @@ def write_json(file_path, data):
     with open(file_path, 'w') as f:
         json.dump(data, f, indent=2)
 
+
 @contextlib.contextmanager
 def smart_open(filename=None, mode='w', binary=False, create_parent_dirs=True):
     fh = get_file_handle(filename, mode, binary, create_parent_dirs)

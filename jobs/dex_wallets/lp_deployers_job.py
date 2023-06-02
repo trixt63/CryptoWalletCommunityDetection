@@ -7,55 +7,68 @@ from web3 import Web3
 from databases.blockchain_etl import BlockchainETL
 from databases.mongodb import MongoDB
 from models.wallet.wallet_deploy_lp import WalletDeployLP
+from utils import file_utils
 from utils.logger_utils import get_logger
 
 logger = get_logger('LP Deployers job')
+DEFAULT_START_PAIR_ID = 0
 PAIR_ID_BATCH_SIZE = 1000
-MISSING_TX_FILE_NAME = 'missing_tx.txt'
+MISSING_TX_FILE_NAME = 'missing_transactions.txt'
 
 
 class LPDeployersJob(SchedulerJob):
     def __init__(
             self,
-            scheduler: str,
+            interval: int,
             chain_id: str,
             web3: Web3,
             importer: MongoDB,
             exporter: MongoDB,
-            transactions_db: BlockchainETL
+            transactions_db: BlockchainETL,
+            last_synced_file="last_synced_pair_id.txt",
+            start_pair_id=DEFAULT_START_PAIR_ID,
     ):
+        super().__init__(scheduler=f'^true@{interval}#true')
+
         self.chain_id = chain_id
         self._importer = importer
         self._exporter = exporter
         self._transactions_db = transactions_db
         self._web3 = web3
 
-        super().__init__(scheduler=scheduler)
+        self._last_synced_file = last_synced_file
+        self._start_pair_id = start_pair_id
+        self._missing_tx_log_file = f".data/{self.chain_id}_{MISSING_TX_FILE_NAME}"
+
+    def _pre_start(self):
+        if self._start_pair_id or (not os.path.isfile(self._last_synced_file)):
+            file_utils.init_last_synced_file(DEFAULT_START_PAIR_ID, self._last_synced_file)
 
     def _start(self):
-        # missing tx file
-        self._missing_tx_file_path = f".data/{self.chain_id}_{MISSING_TX_FILE_NAME}"
-        if os.path.exists(self._missing_tx_file_path):
-            os.remove(self._missing_tx_file_path)
+        self._start_pair_id = file_utils.read_last_synced_file(self._last_synced_file)
+        self._latest_pair_id = self._importer.get_latest_pair_id(chain_id=self.chain_id)
 
     def _end(self):
+        # log the latest pair id crawled before sleep
+        file_utils.write_last_synced_file(self._last_synced_file, self._latest_pair_id)
         gc.collect()
 
     def _execute(self, *args, **kwargs):
         # get lp_addresses by pair_ids ranges
         logger.info(f"Start getting & exporting LP deployers on chain {self.chain_id}")
 
-        self._latest_pair_id = self._importer.get_latest_pair_id(chain_id=self.chain_id)
-        for pair_id in range(0, self._latest_pair_id, PAIR_ID_BATCH_SIZE):
-            self._export_lp_deployers_by_pair_id(pair_id_first=pair_id,
-                                                 pair_id_last=pair_id + PAIR_ID_BATCH_SIZE)
+        for pair_id in range(self._start_pair_id, self._latest_pair_id, PAIR_ID_BATCH_SIZE):
+            self._export_lp_deployers_by_pair_id(start_pair_id=pair_id,
+                                                 end_pair_id=pair_id + PAIR_ID_BATCH_SIZE)
+            file_utils.write_last_synced_file(self._last_synced_file, pair_id + PAIR_ID_BATCH_SIZE)
+        file_utils.write_last_synced_file(self._last_synced_file, self._latest_pair_id)
 
-    def _export_lp_deployers_by_pair_id(self, pair_id_first, pair_id_last):
+    def _export_lp_deployers_by_pair_id(self, start_pair_id, end_pair_id):
         _lp_deployers: Dict[str, WalletDeployLP] = dict()
 
         _cursor = self._importer.get_lps_by_pair_ids(chain_id=self.chain_id,
-                                                     start_pair_id=pair_id_first,
-                                                     end_pair_id=pair_id_last)
+                                                     start_pair_id=start_pair_id,
+                                                     end_pair_id=end_pair_id)
         lp_contracts = {datum['address']: datum['dex'] for datum in _cursor}
 
         for lp_addr, dex_id in lp_contracts.items():
@@ -70,7 +83,8 @@ class LPDeployersJob(SchedulerJob):
                     lp_owner_addr = transaction_['from'].lower()
                     # save the missing blockNumber
                     missing_block_number = transaction_['blockNumber']
-                    self._write_missing_tx_file(tx_hash, missing_block_number)
+                    file_utils.append_log_file(f"{tx_hash}:{missing_block_number}",
+                                               self._missing_tx_log_file)
                 else:
                     lp_owner_addr = transaction_['from_address']
                 # add wallet
@@ -92,7 +106,7 @@ class LPDeployersJob(SchedulerJob):
 
         self._export_wallets(list(_lp_deployers.values()))
 
-        _progress = pair_id_last / self._latest_pair_id
+        _progress = end_pair_id / self._latest_pair_id
         logger.info(f"Exported this batch: {len(_lp_deployers)} LP deployers. "
                     f"Progress: {_progress*100:.2f}%")
 
@@ -101,6 +115,6 @@ class LPDeployersJob(SchedulerJob):
         self._exporter.update_wallets(wallets_data)
 
     def _write_missing_tx_file(self, tx_hash: str, block_number: int):
-        _file = open(self._missing_tx_file_path, "a+")
+        _file = open(self._missing_tx_log_file, "a+")
         _file.write(f"{tx_hash}: {block_number}\n")
         _file.close()

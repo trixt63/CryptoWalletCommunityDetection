@@ -29,7 +29,7 @@ def lp_deployers(chain, interval):
     provider_uri = Networks.providers.get(chain)
     _web3 = Web3(Web3.HTTPProvider(provider_uri))
 
-    job = LPDeployersJob(scheduler=f'^true@{interval}#true',
+    job = LPDeployersJob(interval=interval,
                          chain_id=chain_id,
                          web3=_web3,
                          importer=mongodb,
