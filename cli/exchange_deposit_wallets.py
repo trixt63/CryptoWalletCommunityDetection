@@ -13,7 +13,8 @@ from constants.time_constants import TimeConstants
 from databases.mongodb_entity import MongoDBEntity
 from databases.blockchain_etl import BlockchainETL
 from databases.postgresql import PostgresDB
-from jobs.cli_job import CLIJob
+# from jobs.cli_job import CLIJob
+from cli_scheduler.scheduler_job import SchedulerJob
 from jobs.exchange_deposit_wallets_job import ExchangeDepositWalletsJob
 from utils.file_utils import init_last_synced_file, read_last_synced_file, write_last_synced_file
 from utils.logger_utils import get_logger
@@ -51,10 +52,12 @@ def exchange_deposit_wallets(last_synced_file, start_time, end_time, period, max
     job.run()
 
 
-class ExchangeWallets(CLIJob):
+class ExchangeWallets(SchedulerJob):
     def __init__(
-            self, blockchain_etl, start_timestamp, end_timestamp, period, interval, max_workers,
-            chain_id, last_synced_file, sources
+            self, blockchain_etl, chain_id,
+            start_timestamp, end_timestamp,
+            period, interval, max_workers,
+            last_synced_file, sources
     ):
         self._blockchain_etl = blockchain_etl
 
