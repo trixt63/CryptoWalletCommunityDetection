@@ -22,7 +22,7 @@ class ExchangeDepositWalletsJob(BaseJob):
             self,
             transfer_event_db: PostgresDB,
             blockchain_etl: BlockchainETL,
-            # klg: MongoDBEntity,
+            exporter: MongoDB,
             exchange_wallets: dict,
             chain_id,
             start_timestamp, end_timestamp, period,
@@ -47,7 +47,7 @@ class ExchangeDepositWalletsJob(BaseJob):
         self._blockchain_etl = blockchain_etl
         # self._kgl = klg
 
-        self._exporter = MongoDB()
+        self.exporter = exporter
 
         self.exchange_wallets = exchange_wallets
         self.wallets_groupby_exchanges = dict()
@@ -122,4 +122,4 @@ class ExchangeDepositWalletsJob(BaseJob):
         """Export exchange deposit wallets with tag"""
         wallets = list(self._wallets_by_address.values())
         wallets_data = [wallet.to_dict() for wallet in wallets]
-        self._exporter.update_wallets(wallets_data)
+        self.exporter.update_wallets(wallets_data)

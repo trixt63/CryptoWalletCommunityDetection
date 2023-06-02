@@ -9,8 +9,8 @@ from config import BlockchainETLConfig
 from constants.blockchain_etl_constants import DBPrefix
 from constants.network_constants import Chains
 from constants.time_constants import TimeConstants
-from databases.mongodb_entity import MongoDBEntity
 from databases.blockchain_etl import BlockchainETL
+from databases.mongodb import MongoDB
 from databases.postgresql import PostgresDB
 from cli_scheduler.scheduler_job import SchedulerJob
 from jobs.exchange_deposit_wallets_job import ExchangeDepositWalletsJob
@@ -32,8 +32,10 @@ logger = get_logger('Exchange Deposit wallet')
 @click.option('--interval', default=TimeConstants.A_DAY, show_default=True, type=int,
               help='Interval to repeat the job')
 @click.option('--delay', default=0, show_default=True, type=int, help='Time (in seconds) to delay')
+@click.option('--run-now', default=True, show_default=True, type=bool,
+              help='False to wait until interval then run')
 @click.option('--source', default=None, show_default=True, type=str, multiple=True, help='Source to get data')
-def exchange_deposit_wallets(last_synced_file, start_time, end_time, period, max_workers, chain, interval, delay, source):
+def exchange_deposit_wallets(last_synced_file, start_time, end_time, period, max_workers, chain, interval, delay, run_now, source):
     """Get exchange trading information."""
     chain = str(chain).lower()
     if chain not in Chains.mapping:
@@ -47,7 +49,7 @@ def exchange_deposit_wallets(last_synced_file, start_time, end_time, period, max
     job = ExchangeWallets(
         blockchain_etl=_blockchain_etl, chain_id=chain_id,
         start_timestamp=start_time, end_timestamp=end_time, period=period, interval=interval, delay=delay,
-        max_workers=max_workers, last_synced_file=last_synced_file, sources=sources
+        max_workers=max_workers, last_synced_file=last_synced_file, sources=sources, run_now=run_now
     )
     job.run()
 
@@ -57,13 +59,17 @@ class ExchangeWallets(SchedulerJob):
     """
     def __init__(
             self, blockchain_etl, chain_id,
-            start_timestamp, end_timestamp,
-            period, interval, delay, max_workers,
-            last_synced_file, sources
+            start_timestamp, end_timestamp, period, interval, delay, run_now,
+            max_workers, last_synced_file, sources
     ):
-        self._blockchain_etl = blockchain_etl
 
         self.start_timestamp = start_timestamp
+        # self.end_timestamp = end_timestamp
+        # self.interval = interval
+        scheduler = f"^{run_now}@{interval}/{delay}${end_timestamp}#false"
+        super().__init__(scheduler)
+
+        self._blockchain_etl = blockchain_etl
         self.period = period
 
         self.max_workers = max_workers
@@ -75,14 +81,9 @@ class ExchangeWallets(SchedulerJob):
         if not self.sources:
             self.sources = ['mongo', 'postgres']
 
-        scheduler = f"${interval}/{delay}${end_timestamp}#false"
-        super().__init__(scheduler)
-
     def _pre_start(self):
         self._db = PostgresDB()
-        self._klg_db = MongoDBEntity()
-        # logger.info(f'Connect to graph: {klg_db.connection_url}')
-        # self._exporter = ArangoDBExporter(klg_db)
+        self.mongodb = MongoDB()
 
         if (self.start_timestamp is not None) or (not os.path.isfile(self.last_synced_file)):
             _DEFAULT_START_TIME = int(time.time() - TimeConstants.DAYS_30)
@@ -92,30 +93,35 @@ class ExchangeWallets(SchedulerJob):
         self.exchange_wallets = self.get_exchange_wallets()
 
     def _start(self):
-        self.end_time = self.start_timestamp + self.interval
-        logger.info(f'Start execute from {human_readable_time(self.start_timestamp)} to {human_readable_time(self.end_time)}')
+        # self.end_time = self.start_timestamp + self.interval
+        self.next_synced_timestamp = round_timestamp(self.start_timestamp + self.interval, self.interval) + self.delay
+        logger.info(f'Start execute from {human_readable_time(self.start_timestamp)} to '
+                    f'{human_readable_time(self.next_synced_timestamp)}')
 
     def _execute(self, *args, **kwargs):
         job = ExchangeDepositWalletsJob(
+            # databases & data
             transfer_event_db=self._db,
             blockchain_etl=self._blockchain_etl,
+            exporter=self.mongodb,
             exchange_wallets=self.exchange_wallets,
             chain_id=self.chain_id,
-            start_timestamp=self.start_timestamp, end_timestamp=self.end_time, period=self.period,
-            batch_size=1, max_workers=self.max_workers,
-            sources=self.sources
+            sources=self.sources,
+            # time frame
+            start_timestamp=self.start_timestamp,
+            # end_timestamp=self.end_time,
+            end_timestamp=self.next_synced_timestamp,
+            # multi-workers
+            period=self.period,
+            batch_size=1,
+            max_workers=self.max_workers
         )
         job.run()
 
     def _end(self):
-        self.start_timestamp = self._get_next_synced_timestamp() - self.interval
+        self.start_timestamp = self.next_synced_timestamp
         write_last_synced_file(self.last_synced_file, self.start_timestamp)
-
         time.sleep(3)
-
-    def _get_next_synced_timestamp(self):
-        # Get the next execute timestamp
-        return round_timestamp(self.end_time, round_time=self.interval) + self.interval
 
     def get_exchange_wallets(self):
         with open('artifacts/centralized_exchange_addresses.json') as f:

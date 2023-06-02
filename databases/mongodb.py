@@ -8,7 +8,7 @@ from config import MongoDBConfig
 from utils.logger_utils import get_logger
 
 logger = get_logger('MongoDB')
-WALLETS_COL = 'lendingWallets'
+WALLETS_COL = 'depositWallets'
 
 
 class MongoDB:
