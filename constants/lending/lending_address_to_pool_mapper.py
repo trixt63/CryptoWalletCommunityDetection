@@ -68,7 +68,7 @@ class LendingAddressToPoolMapper:
                 comptroller=comptroller,
                 comptroller_abi=CREAM_COMPTROLLER_ABI
         ):
-            _address_to_pool_mapping[f"{Chains.ethereum}_{c_token.lower()}"] = pool_id
+            _address_to_pool_mapping[f"{chain_id}_{c_token.lower()}"] = pool_id
         return _address_to_pool_mapping
 
 
