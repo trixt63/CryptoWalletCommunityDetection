@@ -22,7 +22,7 @@ class ExchangeDepositWalletsJob(BaseJob):
             self,
             transfer_event_db: PostgresDB,
             blockchain_etl: BlockchainETL,
-            # klg: MongoDBEntity,
+            exporter: MongoDB,
             exchange_wallets: dict,
             chain_id,
             start_timestamp, end_timestamp, period,
@@ -42,14 +42,12 @@ class ExchangeDepositWalletsJob(BaseJob):
             batch_size: Set the number of work for each worker to process parallely
             max_workers: Limit the number of workers that can be used to process the work_iterable
             sources: Specify the source of the data
-        Doc Author:
-            Trinh Tung
     """
         self._db = transfer_event_db
         self._blockchain_etl = blockchain_etl
         # self._kgl = klg
 
-        self._exporter = MongoDB()
+        self.exporter = exporter
 
         self.exchange_wallets = exchange_wallets
         self.wallets_groupby_exchanges = dict()
@@ -107,20 +105,21 @@ class ExchangeDepositWalletsJob(BaseJob):
 
             for item in items:
                 from_address = item['from_address']
-                hot_wallet = Protocol(protocol_id=exchange_id,
-                                      address=from_address,
-                                      chain_id=self.chain_id)
                 if from_address in self._wallets_by_address:
                     # self._wallets_by_address[from_address].deposited_exchanges.add(exchange_id)
-                    self._wallets_by_address[from_address].add_project(hot_wallet)
+                    self._wallets_by_address[from_address].add_protocol(protocol_id=exchange_id,
+                                                                        address=from_address,
+                                                                        chain_id=self.chain_id)
                 else:
                     new_deposit_wallet = WalletDepositExchange(address=from_address)
                     # new_deposit_wallet.add_tags(WalletTags.centralized_exchange_deposit_wallet)
                     self._wallets_by_address[from_address] = new_deposit_wallet
-                    self._wallets_by_address[from_address].add_project(hot_wallet)
+                    self._wallets_by_address[from_address].add_protocol(protocol_id=exchange_id,
+                                                                        address=from_address,
+                                                                        chain_id=self.chain_id)
 
     def _export_wallets(self):
         """Export exchange deposit wallets with tag"""
         wallets = list(self._wallets_by_address.values())
         wallets_data = [wallet.to_dict() for wallet in wallets]
-        self._exporter.update_wallets(wallets_data)
+        self.exporter.update_wallets(wallets_data)

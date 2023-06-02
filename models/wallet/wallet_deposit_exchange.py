@@ -11,11 +11,13 @@ class WalletDepositExchange(Wallet):
         self.exchanges_deposited: Dict[str, Protocol] = dict()
         self.add_tags(WalletTags.centralized_exchange_deposit_wallet)
 
-    def add_project(self, project: Protocol):
-        if project.protocol_id in self.exchanges_deposited:
-            self.exchanges_deposited[project.protocol_id].add_deployments(project.deployments)
+    # def add_protocol(self, protocol: Protocol):
+    def add_protocol(self, protocol_id, chain_id, address):
+        protocol = Protocol(protocol_id, chain_id, address)
+        if protocol.protocol_id in self.exchanges_deposited:
+            self.exchanges_deposited[protocol.protocol_id].add_deployments(protocol.deployments)
         else:
-            self.exchanges_deposited[project.protocol_id] = project
+            self.exchanges_deposited[protocol.protocol_id] = protocol
 
     def to_dict(self):
         returned_dict = super().to_dict()
