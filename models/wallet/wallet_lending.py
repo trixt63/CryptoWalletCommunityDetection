@@ -27,3 +27,8 @@ class WalletLending(Wallet):
             returned_dict['lendingPools'] = lending_pools_dict
 
         return returned_dict
+
+    def not_empty(self) -> bool:
+        if self._lending_pools:
+            return True
+        return False

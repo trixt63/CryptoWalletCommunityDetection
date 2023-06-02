@@ -32,7 +32,7 @@ class MongoDBEntity:
         return state[0]['batch_idx']
 
     def get_multichain_wallets_lendings(self, flagged):
-        _filter = {'flagged': flagged}
+        _filter = {'flagged': flagged, 'lendings': {"$exists": 1}}
         _projection = {'address': 1, 'lendings': 1}
         data = self._multichain_wallets_col.find(_filter, _projection)
         return data

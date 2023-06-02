@@ -14,8 +14,8 @@ class LendingWalletsJob(SchedulerJob):
     def __init__(self, scheduler, n_days=30):
         super().__init__(scheduler)
         self.n_days = n_days
+        self._first_timestamp = None
 
-        # self._first_timestamp = None
         self.current_batch_id = None
 
     def _pre_start(self):
@@ -39,42 +39,34 @@ class LendingWalletsJob(SchedulerJob):
         wallets_data = self._klg.get_multichain_wallets_lendings(flagged)
 
         for wallet_addr_and_lendings in wallets_data:
-            wallet_lending_pools = self._filter_wallet_lending_pools(wallet_addr_and_lendings.get('lendings'))
+            new_lending_wallet = WalletLending(address=wallet_addr_and_lendings['address'])
+            wallet_all_lendings_log = wallet_addr_and_lendings['lendings']
+            for chain_address, wallet_lending_log in wallet_all_lendings_log.items():
+                try:
+                    # assert self._pool_used_within_timeframe(wallet_lending_log)
+                    pool_id = self.lending_pool_id_mapper[chain_address]
+                    chain_id, address= chain_address.split('_')
+                    new_lending_wallet.add_protocol(protocol_id=pool_id,
+                                                    chain_id=chain_id,
+                                                    address=address)
+                except (AssertionError, KeyError):
+                    continue
 
-            if wallet_lending_pools:
-                new_lending_wallet = WalletLending(address=wallet_addr_and_lendings['address'])
-
-                for _pool_data in wallet_lending_pools:
-                    new_lending_wallet.add_protocol(protocol_id=_pool_data['pool_id'],
-                                                    chain_id=_pool_data['chain_id'],
-                                                    address=_pool_data['address'])
-
+            if new_lending_wallet.not_empty():
                 batch_lending_wallets.append(new_lending_wallet)
 
         logger.info(f"Flag {flagged}/{self.current_batch_id+1}: number of lending wallets: {len(batch_lending_wallets)}")
         self._export_wallets(batch_lending_wallets)
 
-    def _filter_wallet_lending_pools(self, wallet_lendings_data: dict):
-        if wallet_lendings_data:
-            extracted_lending_pools = list()
-            for lending_pool_key, lending_pool_data in wallet_lendings_data.items():
-                # deposit_logs = lending_pool_data['depositChangeLogs']
-                # deposit_latest_timestamp = max(deposit_logs.keys())
-                # borrow_logs = lending_pool_data['borrowChangeLogs']
-                # borrow_latest_timestamp = max(borrow_logs.keys())
-                # if (self._first_timestamp <= int(deposit_latest_timestamp) or
-                #         self._first_timestamp <= int(borrow_latest_timestamp)):
-                pool_id = self.lending_pool_id_mapper.get(lending_pool_key, None)
-                if pool_id:
-                    extracted_lending_pools.append({
-                        'chain_id': lending_pool_key.split('_')[0],
-                        'address': lending_pool_key.split('_')[1],
-                        'pool_id': pool_id
-                    })
-
-            return extracted_lending_pools
-        else:
-            return None
+    def _pool_used_within_timeframe(self, pool_deposit_borrow_log):
+        deposit_logs = pool_deposit_borrow_log['depositChangeLogs']
+        deposit_latest_timestamp = max(deposit_logs.keys())
+        borrow_logs = pool_deposit_borrow_log['borrowChangeLogs']
+        borrow_latest_timestamp = max(borrow_logs.keys())
+        if (self._first_timestamp <= int(deposit_latest_timestamp) or
+                self._first_timestamp <= int(borrow_latest_timestamp)):
+            return True
+        return False
 
     def _export_wallets(self, wallets: List[WalletLending]):
         wallets_data = []
