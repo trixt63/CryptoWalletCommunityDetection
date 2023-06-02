@@ -1,22 +1,25 @@
 import gc
-import time
+import os
 from typing import Dict
 from cli_scheduler.scheduler_job import SchedulerJob
+from web3 import Web3
 
 from databases.blockchain_etl import BlockchainETL
 from databases.mongodb import MongoDB
 from models.wallet.wallet_own_lp import WalletOwnLP
 from utils.logger_utils import get_logger
 
-logger = get_logger('LP owners job')
+logger = get_logger('LP Deployers job')
 PAIR_ID_BATCH_SIZE = 1000
+MISSING_TX_FILE_NAME = 'missing_tx.txt'
 
 
-class LPOwnersJob(SchedulerJob):
+class LPDeployersJob(SchedulerJob):
     def __init__(
             self,
             scheduler: str,
             chain_id: str,
+            web3: Web3,
             importer: MongoDB,
             exporter: MongoDB,
             transactions_db: BlockchainETL
@@ -25,8 +28,13 @@ class LPOwnersJob(SchedulerJob):
         self._importer = importer
         self._exporter = exporter
         self._transactions_db = transactions_db
+        self._web3 = web3
 
         super().__init__(scheduler=scheduler)
+        # log file
+        self._missing_tx_file_path = f".data/{chain_id}_{MISSING_TX_FILE_NAME}"
+        if os.path.exists(self._missing_tx_file_path):
+            os.remove(self._missing_tx_file_path)
 
     def _start(self):
         self._wallets: Dict[str, WalletOwnLP] = dict()
@@ -52,8 +60,13 @@ class LPOwnersJob(SchedulerJob):
                     pair_created_event = self._importer.get_pair_created_event(chain_id=self.chain_id, address=lp_addr)
                     tx_hash = pair_created_event['transaction_hash']
                     # get transaction with to_address in lp_addresses
-                    tx = self._transactions_db.get_transaction_by_hash(transaction_hash=tx_hash)
-                    lp_owner_addr = tx.get('from_address')
+                    lp_owner_addr = self._transactions_db.get_transaction_by_hash(tx_hash).get('from_address')
+                    if not lp_owner_addr:
+                        transaction_ = self._web3.eth.getTransaction(tx_hash)
+                        lp_owner_addr = transaction_['from'].lower()
+                        # save the missing blockNumber
+                        missing_block_number = transaction_['blockNumber']
+                        self._write_missing_tx_file(tx_hash, missing_block_number)
                     # add wallet
                     if lp_owner_addr in self._wallets:
                         self._wallets[lp_owner_addr].add_project(project_id=dex_id,
@@ -78,3 +91,8 @@ class LPOwnersJob(SchedulerJob):
     def _export_wallets(self):
         wallets_data = [wallet.to_dict() for wallet in self._wallets.values()]
         self._exporter.update_wallets(wallets_data)
+
+    def _write_missing_tx_file(self, tx_hash: str, block_number: int):
+        _file = open(self._missing_tx_file_path, "a+")
+        _file.write(f"{tx_hash}: {block_number}\n")
+        _file.close()
