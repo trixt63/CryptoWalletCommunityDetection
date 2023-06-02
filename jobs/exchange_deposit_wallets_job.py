@@ -42,8 +42,6 @@ class ExchangeDepositWalletsJob(BaseJob):
             batch_size: Set the number of work for each worker to process parallely
             max_workers: Limit the number of workers that can be used to process the work_iterable
             sources: Specify the source of the data
-        Doc Author:
-            Trinh Tung
     """
         self._db = transfer_event_db
         self._blockchain_etl = blockchain_etl

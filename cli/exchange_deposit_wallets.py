@@ -9,11 +9,9 @@ from config import BlockchainETLConfig
 from constants.blockchain_etl_constants import DBPrefix
 from constants.network_constants import Chains
 from constants.time_constants import TimeConstants
-# from databases.arangodb_klg import ArangoDB
 from databases.mongodb_entity import MongoDBEntity
 from databases.blockchain_etl import BlockchainETL
 from databases.postgresql import PostgresDB
-# from jobs.cli_job import CLIJob
 from cli_scheduler.scheduler_job import SchedulerJob
 from jobs.exchange_deposit_wallets_job import ExchangeDepositWalletsJob
 from utils.file_utils import init_last_synced_file, read_last_synced_file, write_last_synced_file
@@ -33,8 +31,9 @@ logger = get_logger('Exchange Deposit wallet')
 @click.option('-c', '--chain', default='bsc', show_default=True, type=str, help='Network name example bsc or polygon')
 @click.option('--interval', default=TimeConstants.A_DAY, show_default=True, type=int,
               help='Interval to repeat the job')
+@click.option('--delay', default=0, show_default=True, type=int, help='Time (in seconds) to delay')
 @click.option('--source', default=None, show_default=True, type=str, multiple=True, help='Source to get data')
-def exchange_deposit_wallets(last_synced_file, start_time, end_time, period, max_workers, chain, interval, source):
+def exchange_deposit_wallets(last_synced_file, start_time, end_time, period, max_workers, chain, interval, delay, source):
     """Get exchange trading information."""
     chain = str(chain).lower()
     if chain not in Chains.mapping:
@@ -47,18 +46,19 @@ def exchange_deposit_wallets(last_synced_file, start_time, end_time, period, max
 
     job = ExchangeWallets(
         blockchain_etl=_blockchain_etl, chain_id=chain_id,
-        start_timestamp=start_time, end_timestamp=end_time, period=period, interval=interval,
+        start_timestamp=start_time, end_timestamp=end_time, period=period, interval=interval, delay=delay,
         max_workers=max_workers, last_synced_file=last_synced_file, sources=sources
     )
-    # job.export_exchange_address()
     job.run()
 
 
 class ExchangeWallets(SchedulerJob):
+    """Just a continual job wrapper for the ExchangeDepositWalletsJob
+    """
     def __init__(
             self, blockchain_etl, chain_id,
             start_timestamp, end_timestamp,
-            period, interval, max_workers,
+            period, interval, delay, max_workers,
             last_synced_file, sources
     ):
         self._blockchain_etl = blockchain_etl
@@ -75,7 +75,8 @@ class ExchangeWallets(SchedulerJob):
         if not self.sources:
             self.sources = ['mongo', 'postgres']
 
-        super().__init__(interval, end_timestamp, retry=False)
+        scheduler = f"${interval}/{delay}${end_timestamp}#false"
+        super().__init__(scheduler)
 
     def _pre_start(self):
         self._db = PostgresDB()
