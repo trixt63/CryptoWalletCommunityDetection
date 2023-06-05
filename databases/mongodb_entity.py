@@ -37,6 +37,15 @@ class MongoDBEntity:
         data = self._multichain_wallets_col.find(_filter, _projection)
         return data
 
+    def get_listed_tokens(self, chain_id):
+        """get listed tokens on CoinGecko from database
+        (a.k.a. get tokens that have price)"""
+        _filter = {'tags': 'token', 'price': {'$exists': True}, 'chainId': chain_id}
+        _projection = {'_id': 1, 'address': 1, 'decimals': 1,
+                       'price': 1, 'marketCap': 1, 'totalSupply': 1}
+        data = self._smart_contracts_col.find(_filter, _projection)
+        return data
+
     # Old function to get filtered lp contracts for dextools crawler
     # def get_lp_contracts(self, chain_id):
     #     dex_names = LPConstants.CHAIN_DEX_MAPPINGS.get(chain_id)

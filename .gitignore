@@ -165,3 +165,4 @@ last_synced.txt
 
 # Test folders
 .data/
+tests/

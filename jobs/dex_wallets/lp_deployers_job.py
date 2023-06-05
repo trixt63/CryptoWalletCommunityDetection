@@ -13,7 +13,7 @@ from utils.logger_utils import get_logger
 logger = get_logger('LP Deployers job')
 DEFAULT_START_PAIR_ID = 0
 PAIR_ID_BATCH_SIZE = 1000
-MISSING_TX_FILE_NAME = 'missing_transactions.txt'
+MISSING_TX_LOG_FILE = 'missing_transactions.txt'
 
 
 class LPDeployersJob(SchedulerJob):
@@ -36,21 +36,23 @@ class LPDeployersJob(SchedulerJob):
         self._transactions_db = transactions_db
         self._web3 = web3
 
-        self._last_synced_file = last_synced_file
         self._start_pair_id = start_pair_id
-        self._missing_tx_log_file = f".data/{self.chain_id}_{MISSING_TX_FILE_NAME}"
+        self._LAST_SYNCED_FILE = last_synced_file
+        self._MISSING_TXS_FILE = f".data/{self.chain_id}_{MISSING_TX_LOG_FILE}"
 
     def _pre_start(self):
-        if self._start_pair_id or (not os.path.isfile(self._last_synced_file)):
-            file_utils.init_last_synced_file(DEFAULT_START_PAIR_ID, self._last_synced_file)
+        # init the file to save last crawled pair id
+        if self._start_pair_id or (not os.path.isfile(self._LAST_SYNCED_FILE)):
+            file_utils.init_last_synced_file(self._start_pair_id or DEFAULT_START_PAIR_ID, self._LAST_SYNCED_FILE)
 
     def _start(self):
-        self._start_pair_id = file_utils.read_last_synced_file(self._last_synced_file)
+        # get the last crawled pair_id & the latest pair id on the blockchain
+        self._start_pair_id = file_utils.read_last_synced_file(self._LAST_SYNCED_FILE)
         self._latest_pair_id = self._importer.get_latest_pair_id(chain_id=self.chain_id)
 
     def _end(self):
         # log the latest pair id crawled before sleep
-        file_utils.write_last_synced_file(self._last_synced_file, self._latest_pair_id)
+        file_utils.write_last_synced_file(self._LAST_SYNCED_FILE, self._latest_pair_id + 1)
         gc.collect()
 
     def _execute(self, *args, **kwargs):
@@ -60,8 +62,7 @@ class LPDeployersJob(SchedulerJob):
         for pair_id in range(self._start_pair_id, self._latest_pair_id, PAIR_ID_BATCH_SIZE):
             self._export_lp_deployers_by_pair_id(start_pair_id=pair_id,
                                                  end_pair_id=pair_id + PAIR_ID_BATCH_SIZE)
-            file_utils.write_last_synced_file(self._last_synced_file, pair_id + PAIR_ID_BATCH_SIZE)
-        file_utils.write_last_synced_file(self._last_synced_file, self._latest_pair_id)
+            file_utils.write_last_synced_file(self._LAST_SYNCED_FILE, pair_id + PAIR_ID_BATCH_SIZE + 1)
 
     def _export_lp_deployers_by_pair_id(self, start_pair_id, end_pair_id):
         _lp_deployers: Dict[str, WalletDeployLP] = dict()
@@ -84,7 +85,7 @@ class LPDeployersJob(SchedulerJob):
                     # save the missing blockNumber
                     missing_block_number = transaction_['blockNumber']
                     file_utils.append_log_file(f"{tx_hash}:{missing_block_number}",
-                                               self._missing_tx_log_file)
+                                               self._MISSING_TXS_FILE)
                 else:
                     lp_owner_addr = transaction_['from_address']
                 # add wallet
@@ -113,8 +114,3 @@ class LPDeployersJob(SchedulerJob):
     def _export_wallets(self, wallets: List[WalletDeployLP]):
         wallets_data = [wallet.to_dict() for wallet in wallets]
         self._exporter.update_wallets(wallets_data)
-
-    def _write_missing_tx_file(self, tx_hash: str, block_number: int):
-        _file = open(self._missing_tx_log_file, "a+")
-        _file.write(f"{tx_hash}: {block_number}\n")
-        _file.close()
