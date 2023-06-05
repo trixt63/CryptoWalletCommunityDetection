@@ -8,7 +8,7 @@ from config import MongoDBConfig
 from utils.logger_utils import get_logger
 
 logger = get_logger('MongoDB')
-WALLETS_COL = 'lpContracts'
+WALLETS_COL = 'lpDeployers'
 
 
 class MongoDB:
@@ -115,8 +115,12 @@ class MongoDB:
     # for LP pair
     def get_latest_pair_id(self, chain_id: str):
         filter_ = {'chainId': chain_id}
-        latest_pair = self.lp_tokens_col.find_one(filter_, sort=[("pairId", pymongo.DESCENDING)])
-        return latest_pair['pairId']
+        try:
+            latest_pair = self.lp_tokens_col.find_one(filter_, sort=[("pairId", pymongo.DESCENDING)])
+            return latest_pair.get('pairId')
+        except AttributeError as attr_e:
+            logger.warning(f"Cannot get latest pairId from {chain_id}")
+        return None
 
     def get_lps_by_pair_ids(self, chain_id, start_pair_id, end_pair_id):
         filter_ = {

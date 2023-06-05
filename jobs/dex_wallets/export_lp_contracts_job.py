@@ -32,17 +32,18 @@ logger = get_logger('Export lp tokens')
 
 
 class ExportLPContractsJob(SchedulerJob):
-    def __init__(self, interval,
+    def __init__(self, interval, delay,
                  chain_id, factory_address, factory_abi, lp_abi,
                  start_pair_id=0, end_pair_id=None):
-        super().__init__(scheduler=f'^true@{interval}#true')
+        super().__init__(scheduler=f'^true@{interval}/{delay}#true')
 
         self.mongo_entity = MongoDBEntity()
+        self._importer = MongoDB()
         self._exporter = MongoDB()
         self.chain_id = chain_id
 
         self._start_pair_id = start_pair_id
-        self._end_pair_id = end_pair_id or float('inf')
+        self._end_pair_id = end_pair_id
 
         archive = ARCHIVE_MAPPING[chain_id]
         self.web3 = Web3(HTTPProvider(archive))
@@ -84,10 +85,10 @@ class ExportLPContractsJob(SchedulerJob):
         return False
 
     def _execute(self):
-        logger.info(f"Exporting details from LP pair {self._start_pair_id} to LP pair {self._end_pair_id or self._latest_pair_id} "
+        logger.info(f"Exporting LP tokens from pair {self._start_pair_id} to pair {self._end_pair_id or self._latest_pair_id} "
                     f"created by factory {self.factory_address} on chain {self.chain_id}")
 
-        # get all tokens
+        # get all listed tokens
         logger.info(f"Getting CoinGecko tokens on chain {self.chain_id}")
         tokens_cursor = self.mongo_entity.get_listed_tokens(chain_id=self.chain_id)
         self.listed_tokens = {token['address']: token for token in tokens_cursor}
@@ -102,7 +103,7 @@ class ExportLPContractsJob(SchedulerJob):
             batch_1st_pair = batch_last_pair + 1
             file_utils.write_last_synced_file(_LAST_SYNCED_FILE, batch_1st_pair)
 
-            if batch_1st_pair > self._latest_pair_id or batch_1st_pair > self._end_pair_id:
+            if batch_1st_pair > self._latest_pair_id or (self._end_pair_id and batch_1st_pair > self._end_pair_id):
                 break
 
     def _export_batch_lp_contracts(self, pair_ids_batch: List):
