@@ -10,13 +10,14 @@ from databases.blockchain_etl import BlockchainETL
 from jobs.dex_wallets.lp_deployers_job import LPDeployersJob
 from utils.logger_utils import get_logger
 
-logger = get_logger('Exchange Trading Enricher')
+logger = get_logger('LP Deployers CLI')
 
 
 @click.command(context_settings=dict(help_option_names=['-h', '--help']))
 @click.option('-c', '--chain', default='bsc', show_default=True, type=str, help='Network name example bsc or polygon')
 @click.option('--interval', default=TimeConstants.A_DAY, show_default=True, type=int, help='Interval to repeat execute')
-def lp_deployers(chain, interval):
+@click.option('-s', '--start-pair-id', default=0, show_default=True, type=int, help='Start pair to get deployer')
+def lp_deployers(chain, interval, start_pair_id):
     """Get exchange trading information."""
     chain = str(chain).lower()
     if chain not in Chains.mapping:
@@ -35,5 +36,6 @@ def lp_deployers(chain, interval):
                          importer=mongodb,
                          exporter=mongodb,
                          transactions_db=blockchain_etl,
+                         start_pair_id=start_pair_id
                          )
     job.run()
