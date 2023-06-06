@@ -12,7 +12,7 @@ WALLETS_COL = 'test_lpTraders'
 
 
 class MongoDB:
-    def __init__(self, connection_url=None):
+    def __init__(self, connection_url=None, wallet_col=WALLETS_COL):
         if not connection_url:
             connection_url = MongoDBConfig.CONNECTION_URL
 
@@ -21,7 +21,7 @@ class MongoDB:
 
         self._db = self.connection[MongoDBConfig.DATABASE]
         self.lp_tokens_col = self._db['lpTokens']
-        self.wallets_col = self._db[WALLETS_COL]
+        self.wallets_col = self._db[wallet_col]
 
         self._create_index()
 

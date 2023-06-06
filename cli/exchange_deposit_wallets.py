@@ -83,7 +83,7 @@ class ExchangeWallets(SchedulerJob):
 
     def _pre_start(self):
         self._db = PostgresDB()
-        self.mongodb = MongoDB()
+        self.mongodb = MongoDB(wallet_col='depositWallets')
 
         if (self.start_timestamp is not None) or (not os.path.isfile(self.last_synced_file)):
             _DEFAULT_START_TIME = int(time.time() - TimeConstants.DAYS_30)
