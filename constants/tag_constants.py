@@ -14,6 +14,3 @@ class WalletTags:
 
     # nft wallets
     nft_wallet = 'nft_wallet'
-
-    all_wallet_tags = {centralized_exchange_wallet, centralized_exchange_deposit_wallet, lending_wallet, nft_wallet,
-                       lp_deployer, lp_deployer, lp_trader, bot}
