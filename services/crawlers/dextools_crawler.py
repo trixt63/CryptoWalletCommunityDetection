@@ -17,7 +17,7 @@ logger.setLevel(20)  # only console logging INFO or above
 EARLIEST_TX_FILE_PATH = '.data/dextools_oldest_transactions.txt'
 
 
-class DEXToolsCrawler:
+class DEXToolsCrawler:  # TODO: change job to Scheduler & change click to scroll
     def __init__(self, page_number_limit=60):
         self.crawler = BaseCrawler()
         self.page_number_limit = page_number_limit
