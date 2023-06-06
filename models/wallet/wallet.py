@@ -1,7 +1,6 @@
 from typing import Dict
 
 from constants.tag_constants import WalletTags
-from models.protocol import Protocol
 
 
 class Wallet:
