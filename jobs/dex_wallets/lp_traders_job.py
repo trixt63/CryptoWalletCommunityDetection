@@ -50,6 +50,7 @@ class DexTradersCollectorJob(CLIJob):
         wallets_data = []
         for wallet in wallets:
             wallet_dict = wallet.to_dict()
+            wallet_dict['lastUpdatedAt'] = int(time.time())
             wallets_data.append(wallet_dict)
         self.db.update_wallets(wallets_data)
 
