@@ -23,7 +23,7 @@ def lp_deployers(chain, interval):
         raise click.BadOptionUsage("--chain", f"Chain {chain} is not support")
 
     chain_id = Chains.mapping[chain]
-    mongodb = MongoDB()
+    mongodb = MongoDB(wallet_col='lpDeployers')
     blockchain_etl = BlockchainETL(db_prefix=DBPrefix.mapping[chain])
 
     provider_uri = Networks.providers.get(chain)

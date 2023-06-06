@@ -12,16 +12,18 @@ logger = get_logger('Lending Wallets Exporter')
 
 
 class LendingWalletsJob(SchedulerJob):
-    def __init__(self, scheduler, n_days=30):
-        super().__init__(scheduler)
+    def __init__(self, interval,
+                 importer: MongoDBEntity, exporter: MongoDB,
+                 n_days=30):
+        super().__init__(f'^true@{interval}/$#true')
         self.n_days = n_days
+
         self._first_timestamp = None
 
         self.current_batch_id = None
 
-    def _pre_start(self):
-        self._klg = MongoDBEntity()
-        self._mongodb = MongoDB()
+        self.importer = importer
+        self.exporter = exporter
 
     def _start(self):
         self.current_batch_id = None
@@ -29,7 +31,7 @@ class LendingWalletsJob(SchedulerJob):
 
     def _execute(self):
         logger.info('Getting lending wallet addresses from KLG')
-        self.current_batch_id = self._klg.get_current_multichain_wallets_flagged_state()
+        self.current_batch_id = self.importer.get_current_multichain_wallets_flagged_state()
 
         for flagged in range(1, self.current_batch_id+1):
             self._export_flagged_wallets(flagged)
@@ -37,7 +39,7 @@ class LendingWalletsJob(SchedulerJob):
     def _export_flagged_wallets(self, flagged: int):
         logger.info(f"Exporting wallet flag {flagged} / {self.current_batch_id}")
         batch_lending_wallets: List[WalletLending] = []
-        wallets_data = self._klg.get_multichain_wallets_lendings(flagged)
+        wallets_data = self.importer.get_multichain_wallets_lendings(flagged)
 
         for wallet_addr_and_lendings in wallets_data:
             new_lending_wallet = WalletLending(address=wallet_addr_and_lendings['address'])
@@ -75,7 +77,7 @@ class LendingWalletsJob(SchedulerJob):
             wallet_dict = wallet.to_dict()
             wallet_dict['lastUpdatedAt'] = int(time.time())
             wallets_data.append(wallet_dict)
-        self._mongodb.update_wallets(wallets_data)
+        self.exporter.update_wallets(wallets_data)
 
     def _end(self):
         del self.lending_pool_id_mapper
