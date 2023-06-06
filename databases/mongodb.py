@@ -63,6 +63,7 @@ class MongoDB:
                 wallet_base_data = {
                     '_id': wallet.pop('_id'),
                     'address': wallet.pop('address'),
+                    'lastUpdatedAt': wallet.pop('lastUpdatedAt')
                 }
                 tags = wallet.pop('tags')
 
