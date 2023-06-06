@@ -13,8 +13,8 @@ from utils.retry_handler import retry_handler
 from models.lp_transaction import LPTransaction
 
 logger = get_logger('DEXTools Crawler')
-logger.setLevel(20)  # INFO or above
-LOG_FILE_PATH = '.data/dextools_oldest_transactions.txt'
+logger.setLevel(20)  # only console logging INFO or above
+EARLIEST_TX_FILE_PATH = '.data/dextools_oldest_transactions.txt'
 
 
 class DEXToolsCrawler:
@@ -22,8 +22,8 @@ class DEXToolsCrawler:
         self.crawler = BaseCrawler()
         self.page_number_limit = page_number_limit
         # delete log file
-        if os.path.exists(LOG_FILE_PATH):
-            os.remove(LOG_FILE_PATH)
+        if os.path.exists(EARLIEST_TX_FILE_PATH):
+            os.remove(EARLIEST_TX_FILE_PATH)
 
     @retry_handler
     def get_lp_transactions(self, chain_id, lp_address) -> Set[LPTransaction]:
@@ -105,6 +105,6 @@ class DEXToolsCrawler:
 
     @staticmethod
     def _write_log_file(contract_address: str, oldest_time: str):
-        log_file = open(LOG_FILE_PATH, "a+")
+        log_file = open(EARLIEST_TX_FILE_PATH, "a+")
         log_file.write(f"{contract_address}: {oldest_time}\n")
         log_file.close()

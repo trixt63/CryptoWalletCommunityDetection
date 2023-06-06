@@ -8,7 +8,7 @@ from config import MongoDBConfig
 from utils.logger_utils import get_logger
 
 logger = get_logger('MongoDB')
-WALLETS_COL = 'depositWallets'
+WALLETS_COL = 'lpDeployers'
 
 
 class MongoDB:
@@ -28,6 +28,30 @@ class MongoDB:
     def _create_index(self):
         if 'wallets_number_of_txs_index_1' not in self.wallets_col.index_information():
             self.wallets_col.create_index([('number_of_txs', 1)], name='wallets_number_of_txs_index_1')
+
+    def upsert_lp_tokens(self, data: List[dict]):
+        exported_data = [{
+            '_id': f"{datum['chain_id']}_{datum['address']}",
+            'address': datum['address'],
+            'chainId': datum['chain_id'],
+            'dex': datum['dex'],
+            'pairId': datum['pair_id'],
+            'factory': datum['factory'],
+            'token0': datum['token0'],
+            'token1': datum['token1'],
+            'pairBalancesInUSD': datum['pair_balances_in_usd'],
+        } for datum in data]
+
+        bulk_operation = [UpdateOne({'_id': datum['_id']},
+                                    {"$set": datum},
+                                    upsert=True)
+                          for datum in exported_data
+        ]
+
+        try:
+            self.lp_tokens_col.bulk_write(bulk_operation)
+        except Exception as ex:
+            logger.exception(ex)
 
     def update_wallets(self, wallets: List[dict]):
         try:
@@ -91,8 +115,12 @@ class MongoDB:
     # for LP pair
     def get_latest_pair_id(self, chain_id: str):
         filter_ = {'chainId': chain_id}
-        latest_pair = self.lp_tokens_col.find_one(filter_, sort=[("pairId", pymongo.DESCENDING)])
-        return latest_pair['pairId']
+        try:
+            latest_pair = self.lp_tokens_col.find_one(filter_, sort=[("pairId", pymongo.DESCENDING)])
+            return latest_pair.get('pairId')
+        except AttributeError as attr_e:
+            logger.warning(f"Cannot get latest pairId from {chain_id}")
+        return None
 
     def get_lps_by_pair_ids(self, chain_id, start_pair_id, end_pair_id):
         filter_ = {
