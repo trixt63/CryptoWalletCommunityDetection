@@ -1,3 +1,4 @@
+import gc
 import time
 from typing import List, Dict
 
@@ -25,11 +26,12 @@ class DexTradersCollectorJob(CLIJob):
         self.db = db
         self.klg = klg
 
+    def _start(self):
         self.crawler = DEXToolsCrawler(page_number_limit=DEXTOOLS_PAGE_NUMBER_LIMIT)
 
-    def _start(self):
-        # self.dex_trader_wallets: Dict[str, WalletTradeLP] = dict()
-        pass
+    def _end(self):
+        del self.crawler
+        gc.collect()
 
     def _execute(self, *args, **kwargs):
         logger.info(f"Start crawling traders of LP contracts on chain {self.chain_id}")
@@ -57,10 +59,6 @@ class DexTradersCollectorJob(CLIJob):
     def _retry(self):
         logger.warning(f'Try again after {SLEEP_DURATION} seconds ...')
         time.sleep(SLEEP_DURATION)
-
-    def _end(self):
-        # del self.dex_trader_wallets
-        pass
 
     def _get_lp_contracts(self) -> List[dict]:
         lp_contracts_data = self.db.get_pair_by_balance_range(chain_id=self.chain_id, lower=LP_PAIRS_BALANCE_THRESHOLD)
