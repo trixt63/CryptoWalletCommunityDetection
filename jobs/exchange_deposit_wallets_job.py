@@ -123,5 +123,5 @@ class ExchangeDepositWalletsJob(BaseJob):
         wallets = list(self._wallets_by_address.values())
         wallets_data = [wallet.to_dict() for wallet in wallets]
         for datum in wallets_data:
-            datum['lastUpdatedAd'] = int(time.time())
+            datum['lastUpdatedAt'] = int(time.time())
         self.exporter.update_wallets(wallets_data)
