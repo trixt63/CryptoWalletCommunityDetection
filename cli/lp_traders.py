@@ -20,7 +20,7 @@ def lp_traders(chain, interval):
         raise click.BadOptionUsage("--chain", f"Chain {chain} is not support")
     chain_id = Chains.mapping[chain]
     # chain_ids = ['0x38', '0xfa']
-    mongodb = MongoDB()
+    mongodb = MongoDB(wallet_col='lpTraders')
     mongodb_entity = MongoDBEntity()
 
     job = DexTradersCollectorJob(chain_id=chain_id, db=mongodb, klg=mongodb_entity)
