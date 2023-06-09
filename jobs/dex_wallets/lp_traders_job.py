@@ -47,6 +47,7 @@ class DexTradersCollectorJob(CLIJob):
         wallets_data = []
         for wallet in wallets:
             wallet_dict = wallet.to_dict()
+            wallet_dict['lastUpdatedAt'] = int(time.time())
             wallets_data.append(wallet_dict)
         self.db.update_wallets(wallets_data)
 
@@ -57,7 +58,7 @@ class DexTradersCollectorJob(CLIJob):
     def _end(self):
         del self.crawler
         gc.collect()
-
+        
     def _get_lp_contracts(self) -> List[dict]:
         lp_contracts_data = self.db.get_pair_by_balance_range(chain_id=self.chain_id, lower=LP_PAIRS_BALANCE_THRESHOLD)
         all_lp_contracts = [{'address': datum['address'],

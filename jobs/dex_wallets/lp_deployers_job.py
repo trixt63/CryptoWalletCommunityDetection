@@ -117,4 +117,6 @@ class LPDeployersJob(SchedulerJob):
 
     def _export_wallets(self, wallets: List[WalletDeployLP]):
         wallets_data = [wallet.to_dict() for wallet in wallets]
+        for datum in wallets_data:
+            datum['lastUpdatedAt'] = int(time.time())
         self._exporter.update_wallets(wallets_data)

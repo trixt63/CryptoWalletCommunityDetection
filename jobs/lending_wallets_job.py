@@ -81,6 +81,7 @@ class LendingWalletsJob(SchedulerJob):
         wallets_data = []
         for wallet in wallets:
             wallet_dict = wallet.to_dict()
+            wallet_dict['lastUpdatedAt'] = int(time.time())
             wallets_data.append(wallet_dict)
         self.exporter.update_wallets(wallets_data)
 
