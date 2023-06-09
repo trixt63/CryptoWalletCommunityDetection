@@ -8,7 +8,6 @@ from databases.mongodb import MongoDB
 from databases.mongodb_entity import MongoDBEntity
 from jobs.cli_job import CLIJob
 from models.wallet.wallet_trade_lp import WalletTradeLP
-# from models.project import Project
 from services.crawlers.dextools_crawler import DEXToolsCrawler
 from utils.logger_utils import get_logger
 from utils.retry_handler import retry_handler
@@ -28,10 +27,6 @@ class DexTradersCollectorJob(CLIJob):
 
     def _start(self):
         self.crawler = DEXToolsCrawler(page_number_limit=DEXTOOLS_PAGE_NUMBER_LIMIT)
-
-    def _end(self):
-        del self.crawler
-        gc.collect()
 
     def _execute(self, *args, **kwargs):
         logger.info(f"Start crawling traders of LP contracts on chain {self.chain_id}")
@@ -60,6 +55,10 @@ class DexTradersCollectorJob(CLIJob):
         logger.warning(f'Try again after {SLEEP_DURATION} seconds ...')
         time.sleep(SLEEP_DURATION)
 
+    def _end(self):
+        del self.crawler
+        gc.collect()
+        
     def _get_lp_contracts(self) -> List[dict]:
         lp_contracts_data = self.db.get_pair_by_balance_range(chain_id=self.chain_id, lower=LP_PAIRS_BALANCE_THRESHOLD)
         all_lp_contracts = [{'address': datum['address'],
@@ -73,21 +72,18 @@ class DexTradersCollectorJob(CLIJob):
 
         lp_transactions = self.crawler.get_lp_transactions(chain_id=chain_id,
                                                            lp_address=lp_token['address'])
-        # dex_project = Project(project_id=lp_token['dex_id'],
-        #                       chain_id=chain_id,
-        #                       address=lp_token['address'])
         for transaction in lp_transactions:
             dex_wallet_addr = transaction.maker_address
             if dex_wallet_addr in _dex_traders:
-                _dex_traders[dex_wallet_addr].add_project(project_id=lp_token['dex_id'],
-                                                          chain_id=chain_id,
-                                                          address=lp_token['address'])
+                _dex_traders[dex_wallet_addr].add_protocol(protocol_id=lp_token['dex_id'],
+                                                           chain_id=chain_id,
+                                                           address=lp_token['address'])
             else:
-                new_dex_trader_wallet = WalletTradeLP(address=transaction.maker_address)
-                # new_dex_trader_wallet.add_tags(WalletTags.dex_trader)
-                new_dex_trader_wallet.add_project(project_id=lp_token['dex_id'],
-                                                  chain_id=chain_id,
-                                                  address=lp_token['address'])
+                new_dex_trader_wallet = WalletTradeLP(address=transaction.maker_address,
+                                                      last_updated_at=int(time.time()))
+                new_dex_trader_wallet.add_protocol(protocol_id=lp_token['dex_id'],
+                                                   chain_id=chain_id,
+                                                   address=lp_token['address'])
                 _dex_traders[dex_wallet_addr] = new_dex_trader_wallet
 
             if transaction.is_bot:

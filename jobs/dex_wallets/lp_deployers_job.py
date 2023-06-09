@@ -15,6 +15,7 @@ logger = get_logger('LP Deployers job')
 DEFAULT_START_PAIR_ID = 0
 PAIR_ID_BATCH_SIZE = 1000
 MISSING_TX_LOG_FILE = 'missing_transactions.txt'
+_LAST_SYNC_FILE = ".data/.lp_deployers.txt"
 
 
 class LPDeployersJob(SchedulerJob):
@@ -26,7 +27,7 @@ class LPDeployersJob(SchedulerJob):
             importer: MongoDB,
             exporter: MongoDB,
             transactions_db: BlockchainETL,
-            last_synced_file=".data/lp_deployers_log.txt",
+            last_synced_file=_LAST_SYNC_FILE,
             start_pair_id=DEFAULT_START_PAIR_ID,
     ):
         super().__init__(scheduler=f'^true@{interval}#true')
@@ -96,7 +97,8 @@ class LPDeployersJob(SchedulerJob):
                                                                  chain_id=self.chain_id,
                                                                  address=lp_addr)
                 else:
-                    new_lp_owner_wallets = WalletDeployLP(lp_deployer_addr)
+                    new_lp_owner_wallets = WalletDeployLP(lp_deployer_addr,
+                                                          last_updated_at=int(time.time()))
                     new_lp_owner_wallets.add_protocol(protocol_id=dex_id,
                                                       chain_id=self.chain_id,
                                                       address=lp_addr)
@@ -108,7 +110,7 @@ class LPDeployersJob(SchedulerJob):
 
         self._export_wallets(list(_lp_deployers.values()))
 
-        _progress = end_pair_id / self._latest_pair_id
+        _progress = (end_pair_id - self._start_pair_id) / (self._latest_pair_id - self._start_pair_id)
         logger.info(f"Pair {start_pair_id} - {end_pair_id}: "
                     f"Exported {len(_lp_deployers)} deployers from {len(lp_contracts)} LP contracts. "
                     f"Progress to target pair {self._latest_pair_id}: {_progress*100:.2f}%")

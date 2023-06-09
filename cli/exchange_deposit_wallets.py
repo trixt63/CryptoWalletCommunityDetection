@@ -1,5 +1,4 @@
 import json
-import logging
 import os
 import time
 
@@ -35,7 +34,8 @@ logger = get_logger('Exchange Deposit wallet')
 @click.option('--run-now', default=True, show_default=True, type=bool,
               help='False to wait until interval then run')
 @click.option('--source', default=None, show_default=True, type=str, multiple=True, help='Source to get data')
-def exchange_deposit_wallets(last_synced_file, start_time, end_time, period, max_workers, chain, interval, delay, run_now, source):
+def exchange_deposit_wallets(last_synced_file, start_time, end_time, period,
+                             max_workers, chain, interval, delay, run_now, source):
     """Get exchange trading information."""
     chain = str(chain).lower()
     if chain not in Chains.mapping:

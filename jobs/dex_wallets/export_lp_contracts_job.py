@@ -26,7 +26,7 @@ ARCHIVE_MAPPING = {
 
 PAIR_ID_BATCH_SIZE = 1000
 
-_LAST_SYNCED_FILE = '.data/export_lp_contracts_job.txt'
+_LAST_SYNCED_FILE = '.data/.export_lp_contracts.txt'
 
 logger = get_logger('Export lp tokens')
 

@@ -9,7 +9,6 @@ from databases.postgresql import PostgresDB
 from databases.mongodb import MongoDB
 from models.blocks import Blocks
 from models.wallet.wallet_deposit_exchange import WalletDepositExchange
-from models.protocol import Protocol
 from utils.logger_utils import get_logger
 
 logger = get_logger('Exchange Deposit Wallet Job')
@@ -111,7 +110,7 @@ class ExchangeDepositWalletsJob(BaseJob):
                                                                         address=from_address,
                                                                         chain_id=self.chain_id)
                 else:
-                    new_deposit_wallet = WalletDepositExchange(address=from_address)
+                    new_deposit_wallet = WalletDepositExchange(address=from_address, last_updated_at=int(time.time()))
                     # new_deposit_wallet.add_tags(WalletTags.centralized_exchange_deposit_wallet)
                     self._wallets_by_address[from_address] = new_deposit_wallet
                     self._wallets_by_address[from_address].add_protocol(protocol_id=exchange_id,
