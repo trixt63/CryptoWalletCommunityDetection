@@ -27,16 +27,23 @@ class DexTradersCollectorJob(CLIJob):
 
     def _start(self):
         self.crawler = DEXToolsCrawler(page_number_limit=DEXTOOLS_PAGE_NUMBER_LIMIT)
+        self.lp_contracts_data: List[Dict] = list()
 
     def _execute(self, *args, **kwargs):
         logger.info(f"Start crawling traders of LP contracts on chain {self.chain_id}")
-        lp_contracts_data = self._get_lp_contracts()
-        number_of_lps_to_crawl = len(lp_contracts_data)
+        self._get_lp_contracts_data()
+        # lp_contracts_data = [
+        #     {
+        #         'address': '0x3139ffc91b99aa94da8a2dc13f1fc36f9bdc98ee',
+        #         'dex': 'uniswap'
+        #     }
+        # ]
+        number_of_lps_to_crawl = len(self.lp_contracts_data)
         logger.info(f"Number of lp tokens to crawl: {number_of_lps_to_crawl}. Start crawling...")
 
-        for _count, lp_contract_datum in enumerate(lp_contracts_data):
+        for _count, lp_contract_datum in enumerate(self.lp_contracts_data):
             try:
-                dex_traders = self._get_dex_traders(self.chain_id, lp_contract_datum)
+                dex_traders = self._crawl_dex_traders(self.chain_id, lp_contract_datum)
                 self._export_wallets(wallets=dex_traders)
                 logger.info(f"Exported {len(dex_traders)} traders of lp token {_count+1} / {number_of_lps_to_crawl} "
                             f"on chain {self.chain_id}")
@@ -59,29 +66,29 @@ class DexTradersCollectorJob(CLIJob):
         del self.crawler
         gc.collect()
         
-    def _get_lp_contracts(self) -> List[dict]:
+    def _get_lp_contracts_data(self):
         lp_contracts_data = self.db.get_pair_by_balance_range(chain_id=self.chain_id, lower=LP_PAIRS_BALANCE_THRESHOLD)
-        all_lp_contracts = [{'address': datum['address'],
-                             'dex_id': datum['dex']}
-                            for datum in lp_contracts_data]
-        return all_lp_contracts
+        self.lp_contracts_data = [{'address': datum['address'],
+                                   'dex': datum['dex']}
+                                  for datum in lp_contracts_data]
 
     @retry_handler
-    def _get_dex_traders(self, chain_id, lp_token: dict) -> List[WalletTradeLP]:
+    def _crawl_dex_traders(self, chain_id, lp_token: dict) -> List[WalletTradeLP]:
         _dex_traders: Dict[str, WalletTradeLP] = {}
 
-        lp_transactions = self.crawler.get_lp_transactions(chain_id=chain_id,
-                                                           lp_address=lp_token['address'])
+        lp_transactions = self.crawler.scrap_lp_transactions(chain_id=chain_id,
+                                                             lp_address=lp_token['address'])
+
         for transaction in lp_transactions:
             dex_wallet_addr = transaction.maker_address
             if dex_wallet_addr in _dex_traders:
-                _dex_traders[dex_wallet_addr].add_protocol(protocol_id=lp_token['dex_id'],
+                _dex_traders[dex_wallet_addr].add_protocol(protocol_id=lp_token['dex'],
                                                            chain_id=chain_id,
                                                            address=lp_token['address'])
             else:
                 new_dex_trader_wallet = WalletTradeLP(address=transaction.maker_address,
                                                       last_updated_at=int(time.time()))
-                new_dex_trader_wallet.add_protocol(protocol_id=lp_token['dex_id'],
+                new_dex_trader_wallet.add_protocol(protocol_id=lp_token['dex'],
                                                    chain_id=chain_id,
                                                    address=lp_token['address'])
                 _dex_traders[dex_wallet_addr] = new_dex_trader_wallet

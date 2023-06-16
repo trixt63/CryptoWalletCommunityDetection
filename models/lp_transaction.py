@@ -4,7 +4,7 @@ class LPTransaction:
         self.maker_address = maker_address
         self.tx_hash = transaction_hash
         self.is_bot = is_bot
-        self._timestamp = timestamp
+        self.time = timestamp
 
     def __eq__(self, other):
         return self.tx_hash == other.tx_hash

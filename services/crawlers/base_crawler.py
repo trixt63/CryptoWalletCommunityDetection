@@ -26,13 +26,13 @@ class BaseCrawler:
         # Max number of retry times
         self.max_retry_times = max_retry_times
 
-    def _fetch_data(self, url, func, *args, **kwargs):  # why is this a private method??
+    def crawl_soup(self, url, handler_func, *args, **kwargs):  # why is this a private method??
         """
         using Soup to crawl data from an url with helper function func
 
         Args:
             url: Specify the url to be scraped
-            func: Pass in the function that will be used to get tha data from the url
+            handler_func: Pass in the function that will be used to get tha data from the url
 
         Returns:
             The data returned by the func function
@@ -43,7 +43,7 @@ class BaseCrawler:
             try:
                 page_soup, status = self._get_url_soup(url)
                 if 200 <= status < 300:
-                    data = func(page_soup, *args, **kwargs)
+                    data = handler_func(page_soup, *args, **kwargs)
                     break
                 else:
                     logger.warning(f'Fail ({status}) to request url {url}')
@@ -71,7 +71,7 @@ class BaseCrawler:
         page_soup = soup(content, "html.parser")
         return page_soup, status
 
-    def use_chrome_driver(self, url, handler_func, **kwargs):
+    def crawl_selenium(self, url, handler_func, **kwargs):
         """
         using Selenium to crawl data from an url with helper function handler_func
 
@@ -105,34 +105,34 @@ class BaseCrawler:
         return driver
 
 
-# if __name__ == '__main__':
-#     def handler_exchanges(driver):
-#         time.sleep(10)
-#
-#         screen_height = driver.execute_script("return window.screen.height;")  # get the screen height of the web
-#
-#         i = 1
-#         while True:
-#             # scroll one screen height each time
-#             driver.execute_script("window.scrollTo(0, {screen_height}*{i});".format(screen_height=screen_height, i=i))
-#             i += 1
-#             page_soup = soup(driver.page_source, 'html.parser')
-#             table = page_soup.find('app-trade-history')
-#             rows = table.findAll('datatable-body-row')
-#             for row in rows:
-#                 cols = row.find('div', {'class': 'datatable-row-center'}).findAll('datatable-body-cell')
-#                 bot_icon = cols[-1].find('fa-icon')
-#                 if 'ng-star-inserted' in bot_icon.get('class'):
-#                     bot_or_contract_trading = True
-#                     logger.info(f'Trading by bot or contract {bot_or_contract_trading}')
-#
-#             time.sleep(1)
-#             # update scroll height each time after scrolled, as the scroll height can change after we scrolled the page
-#             scroll_height = driver.execute_script("return document.body.scrollHeight;")
-#             # Break the loop when the height we need to scroll to is larger than the total scroll height
-#             if screen_height * i > scroll_height:
-#                 break
-#
-#     crawler = BaseCrawler()
-#     url_ = 'https://www.dextools.io/app/en/bnb/pair-explorer/0x865c77d4ff6383e06c58350a2cfb95cca2c0f056'
-#     crawler.use_chrome_driver(url_, handler_exchanges)
+if __name__ == '__main__':
+    def handler_exchanges(driver):
+        time.sleep(10)
+
+        screen_height = driver.execute_script("return window.screen.height;")  # get the screen height of the web
+
+        i = 1
+        while True:
+            # scroll one screen height each time
+            driver.execute_script("window.scrollTo(0, {screen_height}*{i});".format(screen_height=screen_height, i=i))
+            i += 1
+            page_soup = soup(driver.page_source, 'html.parser')
+            table = page_soup.find('app-trade-history')
+            rows = table.findAll('datatable-body-row')
+            for row in rows:
+                cols = row.find('div', {'class': 'datatable-row-center'}).findAll('datatable-body-cell')
+                bot_icon = cols[-1].find('fa-icon')
+                if 'ng-star-inserted' in bot_icon.get('class'):
+                    bot_or_contract_trading = True
+                    logger.info(f'Trading by bot or contract {bot_or_contract_trading}')
+
+            time.sleep(1)
+            # update scroll height each time after scrolled, as the scroll height can change after we scrolled the page
+            scroll_height = driver.execute_script("return document.body.scrollHeight;")
+            # Break the loop when the height we need to scroll to is larger than the total scroll height
+            if screen_height * i > scroll_height:
+                break
+
+    crawler = BaseCrawler()
+    url_ = 'https://www.dextools.io/app/en/bnb/pair-explorer/0x865c77d4ff6383e06c58350a2cfb95cca2c0f056'
+    crawler.crawl_selenium(url_, handler_exchanges)
