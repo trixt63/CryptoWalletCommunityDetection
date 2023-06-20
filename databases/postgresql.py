@@ -17,6 +17,7 @@ class PostgresDB:
         if not connection_url:
             connection_url = PostgresDBConfig.CONNECTION_URL
         self.engine = create_engine(connection_url)
+        self.session = sessionmaker(bind=self.engine)()
 
     def close(self):
         pass
@@ -29,29 +30,26 @@ class PostgresDB:
         table = table_class.__table__
         table_name = table_class.__tablename__
 
-        session = sessionmaker(bind=self.engine)()
         if not inspector.has_table(table_name=table_name, schema=PostgresDBConfig.SCHEMA):
             # "tables" must be specified because EliteWallet and Base both share the metadata.
             # In other words, Base.metadata.create_all(bind=self.engine, tables=[table_name]) is the same as follows.
             table_class.metadata.create_all(bind=self.engine, tables=[table])
-        session.execute(f'TRUNCATE TABLE {PostgresDBConfig.SCHEMA}.{table_name}')
-        session.commit()
+        self.session.execute(f'TRUNCATE TABLE {PostgresDBConfig.SCHEMA}.{table_name}')
+        self.session.commit()
 
     def update_wallets_table(self, label: str, wallets: list):
         rows = [{'address': address} for address in set(wallets)]
         table_class = WALLET_TABLES.get(label)
 
-        session = sessionmaker(bind=self.engine)()
         try:
             self.reset_wallets_table(table_class)
-            session.bulk_insert_mappings(table_class, rows)
-            session.commit()
+            self.session.bulk_insert_mappings(table_class, rows)
+            self.session.commit()
         except Exception as e:
             logger.exception(e)
 
     # @sync_log_time_exe(tag=TimeExeTag.database)
     def get_event_transfer_by_to_addresses(self, to_addresses, from_block, to_block):
-        session = sessionmaker(bind=self.engine)()
         query = f"""
             SELECT from_address 
             FROM {PostgresDBConfig.SCHEMA}.{PostgresDBConfig.TRANSFER_EVENT_TABLE}
@@ -60,5 +58,5 @@ class PostgresDB:
             GROUP BY from_address
         """
         event_transfer = session.execute(query).all()
-        session.commit()
+        self.session.commit()
         return event_transfer
