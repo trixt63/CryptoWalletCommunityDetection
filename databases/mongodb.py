@@ -23,6 +23,17 @@ class MongoDB:
         self.lp_tokens_col = self._db['lpTokens']
         self.wallets_col = self._db[wallet_col]
 
+        self._deposit_wallets_col = self._db['depositWallets']
+        self._deposit_connections_col = self._db['deposit_connections']
+        self._users_social_col = self._db['users']
+        # self._user_social_deposit_col = self._db['userSocial_deposit']
+        self._cex_wallets_col = self._db['cexUsers']
+
+        self._lp_deployers_col = self._db['lpDeployers']
+        self._lp_traders_col = self._db['lpTraders']
+
+        self._lending_wallets_col = self._db['lendingWallets']
+
         self._create_index()
 
     def _create_index(self):
@@ -87,6 +98,36 @@ class MongoDB:
         except Exception as ex:
             logger.exception(ex)
 
+    def update_cex_users(self):
+        _pagination = 1000
+        # number_of_deposit_wallets = self._deposit_wallets_col.estimated_document_count()
+        number_of_deposit_wallets = 10000
+        for i in range(0, number_of_deposit_wallets, _pagination):
+            bulk_operation = list()
+            _cursor = self._deposit_connections_col.find(filter={}).skip(i).limit(_pagination)
+            for deposit_wallet in _cursor:
+                cex_user = {
+                    '_id': deposit_wallet['_id'],
+                    'exchange': deposit_wallet['exchange chain'],
+                    'depositAddress': deposit_wallet['to_address'],
+                    'userAddresses': deposit_wallet['from_address']
+                }
+                for user_wallet in deposit_wallet['from_address']:
+                    user_social = self._users_social_col.find_one(filter={'_id': user_wallet},
+                                                                  projection={'twitter': 1, 'discord': 1})
+                    if user_social:
+                        cex_user['socialAccounts'] = {
+                            'twitter': user_social['twitter'],
+                            'discord': user_social['discord']
+                        }
+
+                _update_filter = {'_id': cex_user['_id']}
+                _update_command = {'$set': cex_user}
+                bulk_operation.append(UpdateOne(filter=_update_filter, update=_update_command, upsert=True))
+
+            self._cex_wallets_col.bulk_write(bulk_operation)
+            logger.info(f"Iterated {(i+1)*_pagination} / {number_of_deposit_wallets}")
+
     # The next 3 functions are for analysis purpose ###
     def count_wallets(self, _filter):
         _count = self.wallets_col.count_documents(_filter)
@@ -111,6 +152,22 @@ class MongoDB:
         _filter = {f"{field_id}.{project_id}": chain_id}
         _count = self.wallets_col.count_documents(_filter)
         return _count
+
+    def _get_duplicated_wallets(self, input_wallets: list, collection_name: str):
+        col = self._db[collection_name]
+        _filter = {
+            '_id': {'$in': input_wallets}
+        }
+        _project = {
+            'address': 1
+        }
+        duplicated_wallets = col.find(_filter, _project)
+        return duplicated_wallets
+
+    def _delete_wallets(self, collection_name: str,ids: list):
+        _filter = {'_id': {'$in': ids}}
+        col = self._db[collection_name]
+        col.delete_many(_filter)
     # end analysis #############
 
     # for LP pair

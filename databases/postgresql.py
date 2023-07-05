@@ -20,6 +20,7 @@ class PostgresDB:
         self.session = sessionmaker(bind=self.engine)()
 
     def close(self):
+        self.session.close()
         pass
 
     ###################################
