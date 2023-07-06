@@ -190,6 +190,7 @@ class MongoDB:
     #######################
 
     def migrate_deposit_wallets(self):
+        """Migrate depositWallets (from multichain wallets to single-chain"""
         _pagination = 1000
         _number_of_deposit_wallets = self._deposit_wallets_col_old.estimated_document_count()
 
