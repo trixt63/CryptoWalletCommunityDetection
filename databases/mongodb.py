@@ -24,6 +24,8 @@ class MongoDB:
         self.wallets_col = self._db[wallet_col]
 
         self._deposit_wallets_col = self._db['depositWallets']
+        self._deposit_wallets_col_old = self._db['depositWallets_old']
+
         self._deposit_connections_col = self._db['deposit_connections']
         self._users_social_col = self._db['users']
         # self._user_social_deposit_col = self._db['userSocial_deposit']
@@ -80,7 +82,7 @@ class MongoDB:
 
                 # process query to update nested documents for data about lendings/dex/deposit/...
                 field_name = list(wallet.keys())[0]  # 'lendingPools' or 'tradedLPs' or 'exchangesDeposited'...
-                project_names = list(wallet[field_name].keys())  # project id
+                project_names = list(wallet[field_name].keys())  # project id (pancakeswap or something)
                 # update nested documents
                 _mongo_add_to_set_query = {f"{field_name}.{project_name}": {"$each": wallet[field_name][project_name]}
                                            for project_name in project_names}
@@ -97,36 +99,6 @@ class MongoDB:
             self.wallets_col.bulk_write(wallet_updates_bulk)
         except Exception as ex:
             logger.exception(ex)
-
-    def update_cex_users(self):
-        _pagination = 1000
-        # number_of_deposit_wallets = self._deposit_wallets_col.estimated_document_count()
-        number_of_deposit_wallets = 10000
-        for i in range(0, number_of_deposit_wallets, _pagination):
-            bulk_operation = list()
-            _cursor = self._deposit_connections_col.find(filter={}).skip(i).limit(_pagination)
-            for deposit_wallet in _cursor:
-                cex_user = {
-                    '_id': deposit_wallet['_id'],
-                    'exchange': deposit_wallet['exchange chain'],
-                    'depositAddress': deposit_wallet['to_address'],
-                    'userAddresses': deposit_wallet['from_address']
-                }
-                for user_wallet in deposit_wallet['from_address']:
-                    user_social = self._users_social_col.find_one(filter={'_id': user_wallet},
-                                                                  projection={'twitter': 1, 'discord': 1})
-                    if user_social:
-                        cex_user['socialAccounts'] = {
-                            'twitter': user_social['twitter'],
-                            'discord': user_social['discord']
-                        }
-
-                _update_filter = {'_id': cex_user['_id']}
-                _update_command = {'$set': cex_user}
-                bulk_operation.append(UpdateOne(filter=_update_filter, update=_update_command, upsert=True))
-
-            self._cex_wallets_col.bulk_write(bulk_operation)
-            logger.info(f"Iterated {(i+1)*_pagination} / {number_of_deposit_wallets}")
 
     # The next 3 functions are for analysis purpose ###
     def count_wallets(self, _filter):
@@ -212,3 +184,70 @@ class MongoDB:
         filter_ = {'pair': address}
         cursor = pair_created_col.find_one(filter_)
         return cursor
+
+    #######################
+    #     Artifacts       #
+    #######################
+
+    def migrate_deposit_wallets(self):
+        _pagination = 1000
+        _number_of_deposit_wallets = self._deposit_wallets_col_old.estimated_document_count()
+
+        for i in range(0, _number_of_deposit_wallets, _pagination):
+            bulk_operation = list()
+            deposit_wallets = self._deposit_wallets_col_old.find({}).skip(i).limit(_pagination)
+
+            for _deposit_wallet in deposit_wallets:
+                address = _deposit_wallet['address']
+                tags = _deposit_wallet['tags']
+                exchanges_data = dict(_deposit_wallet['depositedExchanges'])
+
+                for _exchange_name, _chains in exchanges_data.items():
+                    for chain_id in _chains:
+                        data_upsert = {
+                            '_id': f"{chain_id}_{address}",
+                            'address': address,
+                            'lastUpdatedAt': _deposit_wallet['lastUpdatedAt']
+                        }
+                        data_add_to_set = {
+                            "depositedExchanges": _exchange_name,
+                            "tags": {"$each": tags},
+                        }
+
+                        _update_filter = {'_id': data_upsert['_id']}
+                        _update_data = {'$set': data_upsert,
+                                        '$addToSet': data_add_to_set}
+                        bulk_operation.append(UpdateOne(filter=_update_filter, update=_update_data, upsert=True))
+
+            self._deposit_wallets_col.bulk_write(bulk_operation)
+            logger.info(f"Update {i + _pagination} / {_number_of_deposit_wallets} deposit wallets")
+
+    def update_cex_users(self):
+        _pagination = 1000
+        # number_of_deposit_wallets = self._deposit_wallets_col.estimated_document_count()
+        number_of_deposit_wallets = 10000
+        for i in range(0, number_of_deposit_wallets, _pagination):
+            bulk_operation = list()
+            _cursor = self._deposit_connections_col.find(filter={}).skip(i).limit(_pagination)
+            for deposit_wallet in _cursor:
+                cex_user = {
+                    '_id': deposit_wallet['_id'],
+                    'exchange': deposit_wallet['exchange chain'],
+                    'depositAddress': deposit_wallet['to_address'],
+                    'userAddresses': deposit_wallet['from_address']
+                }
+                for user_wallet in deposit_wallet['from_address']:
+                    user_social = self._users_social_col.find_one(filter={'_id': user_wallet},
+                                                                  projection={'twitter': 1, 'discord': 1})
+                    if user_social:
+                        cex_user['socialAccounts'] = {
+                            'twitter': user_social['twitter'],
+                            'discord': user_social['discord']
+                        }
+
+                _update_filter = {'_id': cex_user['_id']}
+                _update_command = {'$set': cex_user}
+                bulk_operation.append(UpdateOne(filter=_update_filter, update=_update_command, upsert=True))
+
+            self._cex_wallets_col.bulk_write(bulk_operation)
+            logger.info(f"Iterated {i + _pagination} / {number_of_deposit_wallets}")
