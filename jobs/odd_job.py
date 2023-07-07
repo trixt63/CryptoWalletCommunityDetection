@@ -11,7 +11,7 @@ logger = get_logger('Odd job')
 def main():
     # vi_dac_biet = '0x95106a95922a179f4b951e8c886952498afe8f19'
     mongodb = MongoDB()
-    mongodb.migrate_deposit_wallets()
+    mongodb.migrate_deposit_wallets(start=12651000, pagination=10000)
 
 
 if __name__ == "__main__":

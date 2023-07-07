@@ -189,14 +189,13 @@ class MongoDB:
     #     Artifacts       #
     #######################
 
-    def migrate_deposit_wallets(self):
+    def migrate_deposit_wallets(self, start=0, pagination=1000):
         """Migrate depositWallets (from multichain wallets to single-chain"""
-        _pagination = 1000
         _number_of_deposit_wallets = self._deposit_wallets_col_old.estimated_document_count()
 
-        for i in range(0, _number_of_deposit_wallets, _pagination):
+        for i in range(start, _number_of_deposit_wallets, pagination):
             bulk_operation = list()
-            deposit_wallets = self._deposit_wallets_col_old.find({}).skip(i).limit(_pagination)
+            deposit_wallets = self._deposit_wallets_col_old.find({}).skip(i).limit(pagination)
 
             for _deposit_wallet in deposit_wallets:
                 address = _deposit_wallet['address']
@@ -221,7 +220,7 @@ class MongoDB:
                         bulk_operation.append(UpdateOne(filter=_update_filter, update=_update_data, upsert=True))
 
             self._deposit_wallets_col.bulk_write(bulk_operation)
-            logger.info(f"Update {i + _pagination} / {_number_of_deposit_wallets} deposit wallets")
+            logger.info(f"Update {i + pagination} / {_number_of_deposit_wallets} deposit wallets")
 
     def update_cex_users(self):
         _pagination = 1000
