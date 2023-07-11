@@ -193,7 +193,6 @@ class MongoDB:
 
     def add_chain_id_for_deposit_wallets(self, first_doc, last_doc):
         bulk_operation = list()
-        print(f"{first_doc}, {last_doc}")
         _cursor = self._deposit_wallets_col.find(filter={}).skip(first_doc).limit(last_doc - first_doc + 1)
         for deposit_wallet in _cursor:
             chain_id = deposit_wallet['_id'].split('_')[0]
