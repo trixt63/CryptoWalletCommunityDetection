@@ -186,41 +186,20 @@ class MongoDB:
         return cursor
 
     #######################
-    #     Artifacts       #
+    #      Odd jobs       #
     #######################
+    def get_number_of_docs(self, collection_name):
+        col = self._db[collection_name]
+        return col.estimated_document_count()
 
-    def migrate_deposit_wallets(self, start=0, pagination=1000):
-        """Migrate depositWallets (from multichain wallets to single-chain"""
-        _number_of_deposit_wallets = self._deposit_wallets_col_old.estimated_document_count()
-
-        for i in range(start, _number_of_deposit_wallets, pagination):
-            bulk_operation = list()
-            deposit_wallets = self._deposit_wallets_col_old.find({}).skip(i).limit(pagination)
-
-            for _deposit_wallet in deposit_wallets:
-                address = _deposit_wallet['address']
-                tags = _deposit_wallet['tags']
-                exchanges_data = dict(_deposit_wallet['depositedExchanges'])
-
-                for _exchange_name, _chains in exchanges_data.items():
-                    for chain_id in _chains:
-                        data_upsert = {
-                            '_id': f"{chain_id}_{address}",
-                            'address': address,
-                            'lastUpdatedAt': _deposit_wallet['lastUpdatedAt']
-                        }
-                        data_add_to_set = {
-                            "depositedExchanges": _exchange_name,
-                            "tags": {"$each": tags},
-                        }
-
-                        _update_filter = {'_id': data_upsert['_id']}
-                        _update_data = {'$set': data_upsert,
-                                        '$addToSet': data_add_to_set}
-                        bulk_operation.append(UpdateOne(filter=_update_filter, update=_update_data, upsert=True))
-
-            self._deposit_wallets_col.bulk_write(bulk_operation)
-            logger.info(f"Update {i + pagination} / {_number_of_deposit_wallets} deposit wallets")
+    def add_chain_id_for_deposit_wallets(self, start, end):
+        bulk_operation = list()
+        _cursor = self._deposit_connections_col.find(filter={}).skip(start).limit(end-start+1)
+        for deposit_wallet in _cursor:
+            chain_id = deposit_wallet['_id'][:4]
+            bulk_operation.append(UpdateOne(filter={'_id': deposit_wallet['_id']},
+                                            update={'$set': {'chainId': chain_id}}))
+        self._deposit_wallets_col.bulk_write(bulk_operation)
 
     def update_cex_users(self):
         _pagination = 1000
