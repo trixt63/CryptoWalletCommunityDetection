@@ -14,7 +14,6 @@ class MultithreadOddJob(BaseJob):
         self.mongodb = MongoDB()
         self.pagination = 10000
         self._number_of_docs = self.mongodb.get_number_of_docs('depositWallets')
-        # _number_of_docs = 12300
 
         super().__init__(
             work_iterable=range(self._number_of_docs),
@@ -26,7 +25,7 @@ class MultithreadOddJob(BaseJob):
         logger.info(f"Number of docs: {self._number_of_docs}")
 
     def _execute_batch(self, works):
-        # self.mongodb.add_chain_id_for_deposit_wallets(works[0], works[-1])
+        self.mongodb.add_chain_id_for_deposit_wallets(works[0], works[-1])
         logger.info(f"Add chainId for deposit wallet {works[0]} to {works[-1]}")
 
 
