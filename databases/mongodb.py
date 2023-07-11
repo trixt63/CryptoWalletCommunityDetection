@@ -24,7 +24,6 @@ class MongoDB:
         self.wallets_col = self._db[wallet_col]
 
         self._deposit_wallets_col = self._db['depositWallets']
-        self._deposit_wallets_col_old = self._db['depositWallets_old']
 
         self._deposit_connections_col = self._db['deposit_connections']
         self._users_social_col = self._db['users']
@@ -192,11 +191,12 @@ class MongoDB:
         col = self._db[collection_name]
         return col.estimated_document_count()
 
-    def add_chain_id_for_deposit_wallets(self, start, end):
+    def add_chain_id_for_deposit_wallets(self, first_doc, last_doc):
         bulk_operation = list()
-        _cursor = self._deposit_connections_col.find(filter={}).skip(start).limit(end-start+1)
+        print(f"{first_doc}, {last_doc}")
+        _cursor = self._deposit_wallets_col.find(filter={}).skip(first_doc).limit(last_doc - first_doc + 1)
         for deposit_wallet in _cursor:
-            chain_id = deposit_wallet['_id'][:4]
+            chain_id = deposit_wallet['_id'].split('_')[0]
             bulk_operation.append(UpdateOne(filter={'_id': deposit_wallet['_id']},
                                             update={'$set': {'chainId': chain_id}}))
         self._deposit_wallets_col.bulk_write(bulk_operation)

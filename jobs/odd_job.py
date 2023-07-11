@@ -13,7 +13,8 @@ class MultithreadOddJob(BaseJob):
     def __init__(self):
         self.mongodb = MongoDB()
         self.pagination = 10000
-        self._number_of_docs = self.mongodb.get_number_of_docs('depositWallets')
+        # self._number_of_docs = self.mongodb.get_number_of_docs('depositWallets')
+        self._number_of_docs = 12333
 
         super().__init__(
             work_iterable=range(self._number_of_docs),
