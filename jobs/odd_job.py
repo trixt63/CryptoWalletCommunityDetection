@@ -14,8 +14,7 @@ class MultithreadOddJob(BaseJob):
         self.mongodb = MongoDB()
         self.pagination = 100000
         self._first_block = int(self.mongodb._get_min(col_name='transferEvents', field_name='block_number'))
-        # self._last_block = int(self.mongodb._get_max(col_name='transferEvents', field_name='block_number'))
-        self._last_block = 19162337
+        self._last_block = int(self.mongodb._get_max(col_name='transferEvents', field_name='block_number'))
 
         super().__init__(
             work_iterable=range(self._first_block, self._last_block),
