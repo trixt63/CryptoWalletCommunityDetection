@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Dict
 
 import pymongo
 from pymongo import MongoClient, UpdateOne
@@ -27,8 +27,7 @@ class MongoDB:
 
         self._deposit_connections_col = self._db['deposit_connections']
         self._users_social_col = self._db['users']
-        # self._user_social_deposit_col = self._db['userSocial_deposit']
-        self._cex_wallets_col = self._db['cexUsers']
+        self._transfer_events_col = self._db['transferEvents']
 
         self._lp_deployers_col = self._db['lpDeployers']
         self._lp_traders_col = self._db['lpTraders']
@@ -40,6 +39,27 @@ class MongoDB:
     def _create_index(self):
         if 'wallets_number_of_txs_index_1' not in self.wallets_col.index_information():
             self.wallets_col.create_index([('number_of_txs', 1)], name='wallets_number_of_txs_index_1')
+
+    #######################
+    #   Aggregate groups  #
+    #######################
+
+    def _get_min(self, col_name, field_name, filter_={}):
+        cursor = self._db[col_name].find(filter_).sort(field_name, 1).limit(1)
+        return cursor[0][field_name]
+
+    def _get_max(self, col_name, field_name, filter_={}):
+        cursor = self._db[col_name].find(filter_).sort(field_name, -1).limit(1)
+        return cursor[0][field_name]
+
+    def get_transfers_by_blocks_range(self, start_block: int, end_block: int):
+        cursor = self._transfer_events_col.find({'block_number': {'$gte': start_block,
+                                                                  '$lte': end_block}})
+        return cursor
+
+    #######################
+    #        Update       #
+    #######################
 
     def upsert_lp_tokens(self, data: List[dict]):
         exported_data = [{
@@ -99,49 +119,7 @@ class MongoDB:
         except Exception as ex:
             logger.exception(ex)
 
-    # The next 3 functions are for analysis purpose ###
-    def count_wallets(self, _filter):
-        _count = self.wallets_col.count_documents(_filter)
-        return _count
-
-    def count_wallets_each_chain(self, field_id, project_id, chain_id='0x38'):
-        """Count number of wallets of each project on each chain"""
-        _filter = {f"{field_id}.{project_id}": {"$exists": 1}}
-        _projection = {f"{field_id}.{project_id}": 1}
-        deployments = self.wallets_col.find(_filter, _projection)
-        _count = 0
-        for _depl in deployments:
-            for project in _depl[field_id][project_id]:
-                if project['chainId'] == chain_id:
-                    _count += 1
-                    continue
-        return _count
-
-    def count_exchange_deposit_wallets_each_chain(self, field_id, project_id, chain_id='0x38'):
-        """Each CEX project stores a list of chain_ids, instead a list of objects like other type of project,
-        so I need a separate function to handle this"""
-        _filter = {f"{field_id}.{project_id}": chain_id}
-        _count = self.wallets_col.count_documents(_filter)
-        return _count
-
-    def _get_duplicated_wallets(self, input_wallets: list, collection_name: str):
-        col = self._db[collection_name]
-        _filter = {
-            '_id': {'$in': input_wallets}
-        }
-        _project = {
-            'address': 1
-        }
-        duplicated_wallets = col.find(_filter, _project)
-        return duplicated_wallets
-
-    def _delete_wallets(self, collection_name: str,ids: list):
-        _filter = {'_id': {'$in': ids}}
-        col = self._db[collection_name]
-        col.delete_many(_filter)
-    # end analysis #############
-
-    # for LP pair
+    # the next 3 funcs are fore DEX-related threads
     def get_latest_pair_id(self, chain_id: str):
         filter_ = {'chainId': chain_id}
         try:
@@ -185,6 +163,50 @@ class MongoDB:
         return cursor
 
     #######################
+    #      Analysis       #
+    #######################
+    def count_wallets(self, _filter):
+        _count = self.wallets_col.count_documents(_filter)
+        return _count
+
+    def count_wallets_each_chain(self, field_id, project_id, chain_id='0x38'):
+        """Count number of wallets of each project on each chain"""
+        _filter = {f"{field_id}.{project_id}": {"$exists": 1}}
+        _projection = {f"{field_id}.{project_id}": 1}
+        deployments = self.wallets_col.find(_filter, _projection)
+        _count = 0
+        for _depl in deployments:
+            for project in _depl[field_id][project_id]:
+                if project['chainId'] == chain_id:
+                    _count += 1
+                    continue
+        return _count
+
+    def count_exchange_deposit_wallets_each_chain(self, field_id, project_id, chain_id='0x38'):
+        """Each CEX project stores a list of chain_ids, instead a list of objects like other type of project,
+        so I need a separate function to handle this"""
+        _filter = {f"{field_id}.{project_id}": chain_id}
+        _count = self.wallets_col.count_documents(_filter)
+        return _count
+
+    def _get_duplicated_wallets(self, input_wallets: list, collection_name: str):
+        col = self._db[collection_name]
+        _filter = {
+            '_id': {'$in': input_wallets}
+        }
+        _project = {
+            'address': 1
+        }
+        duplicated_wallets = col.find(_filter, _project)
+        return duplicated_wallets
+
+    def _delete_wallets(self, collection_name: str,ids: list):
+        _filter = {'_id': {'$in': ids}}
+        col = self._db[collection_name]
+        col.delete_many(_filter)
+    # end analysis #############
+
+    #######################
     #      Odd jobs       #
     #######################
     def get_number_of_docs(self, collection_name):
@@ -200,32 +222,30 @@ class MongoDB:
                                             update={'$set': {'chainId': chain_id}}))
         self._deposit_wallets_col.bulk_write(bulk_operation)
 
-    def update_cex_users(self):
-        _pagination = 1000
-        # number_of_deposit_wallets = self._deposit_wallets_col.estimated_document_count()
-        number_of_deposit_wallets = 10000
-        for i in range(0, number_of_deposit_wallets, _pagination):
-            bulk_operation = list()
-            _cursor = self._deposit_connections_col.find(filter={}).skip(i).limit(_pagination)
-            for deposit_wallet in _cursor:
-                cex_user = {
-                    '_id': deposit_wallet['_id'],
-                    'exchange': deposit_wallet['exchange chain'],
-                    'depositAddress': deposit_wallet['to_address'],
-                    'userAddresses': deposit_wallet['from_address']
-                }
-                for user_wallet in deposit_wallet['from_address']:
-                    user_social = self._users_social_col.find_one(filter={'_id': user_wallet},
-                                                                  projection={'twitter': 1, 'discord': 1})
-                    if user_social:
-                        cex_user['socialAccounts'] = {
-                            'twitter': user_social['twitter'],
-                            'discord': user_social['discord']
-                        }
+    def fix_transfer_events(self, start_block: str, end_block: str):
+        old_transfer_events_col = self._db['transferEvents']
+        new_transfer_events_col = self._db['transferEvents_new']
+        new_transfer_events: List[Dict] = list()
+        bulk_operation = list()
 
-                _update_filter = {'_id': cex_user['_id']}
-                _update_command = {'$set': cex_user}
-                bulk_operation.append(UpdateOne(filter=_update_filter, update=_update_command, upsert=True))
+        cursor = old_transfer_events_col.find({'block_number': {'$gte': start_block,
+                                                                '$lte': end_block}})
+        for transfer_event in cursor:
+            chain_id = transfer_event['chainID']
+            from_address = transfer_event['from_address']
+            to_address = transfer_event['to_address']
+            id = f"{chain_id}_{from_address}_{to_address}",
+            new_transfer_event = {
+                # '_id': f"{chain_id}_{from_address}_{to_address}",
+                'chainId': chain_id,
+                'contractAddress': transfer_event['contract_address'],
+                'blockNumber': int(transfer_event['block_number']),
+                'fromAddress': transfer_event['from_address'],
+                'toAddress': transfer_event['to_address'],
+                'value': float(transfer_event['value']),
+            }
+            bulk_operation.append(UpdateOne(filter={'_id': id},
+                                            update={'$set': new_transfer_event},
+                                            upsert=True))
 
-            self._cex_wallets_col.bulk_write(bulk_operation)
-            logger.info(f"Iterated {i + _pagination} / {number_of_deposit_wallets}")
+        new_transfer_events_col.bulk_write(bulk_operation)

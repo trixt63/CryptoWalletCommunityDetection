@@ -12,20 +12,19 @@ logger = get_logger('Odd job')
 class MultithreadOddJob(BaseJob):
     def __init__(self):
         self.mongodb = MongoDB()
-        self.pagination = 10000
-        self._number_of_docs = self.mongodb.get_number_of_docs('depositWallets')
+        self.pagination = 100000
+        self._first_block = int(self.mongodb._get_min(col_name='transferEvents', field_name='block_number'))
+        # self._last_block = int(self.mongodb._get_max(col_name='transferEvents', field_name='block_number'))
+        self._last_block = 19162337
 
         super().__init__(
-            work_iterable=range(self._number_of_docs),
+            work_iterable=range(self._first_block, self._last_block),
             max_workers=8,
             batch_size=self.pagination
         )
 
-    def _start(self):
-        logger.info(f"Number of docs: {self._number_of_docs}")
-
     def _execute_batch(self, works):
-        self.mongodb.add_chain_id_for_deposit_wallets(works[0], works[-1])
+        self.mongodb.fix_transfer_events(str(works[0]), str(works[-1]))
         logger.info(f"Add chainId for deposit wallet {works[0]} to {works[-1]}")
 
 
