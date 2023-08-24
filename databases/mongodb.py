@@ -34,6 +34,8 @@ class MongoDB:
 
         self._lending_wallets_col = self._db['lendingWallets']
 
+        self._groups_col = self._db['groups']
+
         self._create_index()
 
     def _create_index(self):
@@ -52,7 +54,7 @@ class MongoDB:
         cursor = self._db[col_name].find(filter_).sort(field_name, -1).limit(1)
         return cursor[0][field_name]
 
-    def get_transfers_by_blocks_range(self, start_block: int, end_block: int):
+    def get_transfers_by_blocks_range(self, start_block: str, end_block: str):
         cursor = self._transfer_events_col.find({'block_number': {'$gte': start_block,
                                                                   '$lte': end_block}})
         return cursor
@@ -204,7 +206,6 @@ class MongoDB:
         _filter = {'_id': {'$in': ids}}
         col = self._db[collection_name]
         col.delete_many(_filter)
-    # end analysis #############
 
     #######################
     #      Odd jobs       #
@@ -213,14 +214,23 @@ class MongoDB:
         col = self._db[collection_name]
         return col.estimated_document_count()
 
-    def add_chain_id_for_deposit_wallets(self, first_doc, last_doc):
-        bulk_operation = list()
-        _cursor = self._deposit_wallets_col.find(filter={}).skip(first_doc).limit(last_doc - first_doc + 1)
-        for deposit_wallet in _cursor:
-            chain_id = deposit_wallet['_id'].split('_')[0]
-            bulk_operation.append(UpdateOne(filter={'_id': deposit_wallet['_id']},
-                                            update={'$set': {'chainId': chain_id}}))
-        self._deposit_wallets_col.bulk_write(bulk_operation)
+    def get_groups_by_num_wallets(self, chain_id, num_user_cond: dict or int, num_depo_cond: dict or int):
+        pipeline = [
+            {
+                '$match': {
+                    'num_user': num_user_cond,
+                    'num_depo': num_depo_cond,
+                    'Chain': chain_id
+                }
+            },
+            {
+                '$sort': {
+                    'num_user': -1
+                }
+            }
+        ]
+        result = self._groups_col.aggregate(pipeline)
+        return result
 
     def fix_transfer_events(self, start_block: str, end_block: str):
         old_transfer_events_col = self._db['transferEvents']
@@ -249,3 +259,5 @@ class MongoDB:
                                             upsert=True))
 
         new_transfer_events_col.bulk_write(bulk_operation)
+
+
