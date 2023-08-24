@@ -38,8 +38,18 @@ class BlockchainETL:
                 {"to_address": address}
             ]
         }
-        projection = ['to_address', 'value', 'block_number', 'block_timestamp']
-        cursor = self.transaction_collection.find(filter_, projection=projection).batch_size(10000)
+        cursor = self.transaction_collection.find(filter_).batch_size(1000)
+        return cursor
+
+    def get_transactions_relate_to_list_addresses(self, addresses, from_block, to_block):
+        filter_ = {
+            "block_number": {"$gte": from_block, "$lt": to_block},
+            "$or": [
+                {"from_address": {"$in": addresses}},
+                {"to_address": {"$in": addresses}}
+            ]
+        }
+        cursor = self.transaction_collection.find(filter_).batch_size(1000)
         return cursor
 
     # @sync_log_time_exe(tag=TimeExeTag.database)
