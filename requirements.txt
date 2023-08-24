@@ -11,6 +11,7 @@ pandas
 pymongo==3.11.4
 python-dotenv==0.19.2
 python-cli-scheduler
+pandas
 QueryStateLib
 selenium==4.6.0
 SQLAlchemy~=1.4.46
