@@ -19,7 +19,7 @@ def export_transactions(chain, end_block, start_block, max_workers, batch_size):
     if chain not in Chains.mapping:
         raise click.BadOptionUsage("--chain", f"Chain {chain} is not support")
     chain_id = Chains.mapping[chain]
-    df = pd.read_csv(f'../../data/{chain_id}_wallets_pairs.csv')
+    df = pd.read_csv(f'./data/{chain_id}_wallets_pairs.csv')
 
     logger.info("Export x wallets")
     x_wallets = list(df['x'])
