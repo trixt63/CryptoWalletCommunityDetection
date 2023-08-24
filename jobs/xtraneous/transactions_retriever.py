@@ -7,8 +7,10 @@ sys.path.append(os.path.dirname(sys.path[0]))
 from constants.network_constants import Chains
 from databases.blockchain_etl import BlockchainETL
 from databases.mongodb import MongoDB
+from utils.logger_utils import get_logger
 
 DECIMALS = 10**18
+logger = get_logger('Transactions Retriever')
 
 
 class TransactionsRetriever(BaseJob):
