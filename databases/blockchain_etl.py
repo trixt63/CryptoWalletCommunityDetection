@@ -29,39 +29,16 @@ class BlockchainETL:
         self.transaction_collection = self.mongo_db[BlockchainETLCollections.transactions]
         self.collector_collection = self.mongo_db[BlockchainETLCollections.collectors]
 
-    def _create_index(self):
-        # If blockchain_etl 30 days, create index
-        # Collection: blocks
-        # - number: -1
-        #
-        # Collection: transactions
-        # - block_number: -1
-        # - block_timestamp: 1
-        # - from_address: 1, block_number: -1
-        # - to_address: 1, block_number: -1
-        # - from_address: 1, to_address: 1
-
-        if BlockchainETLIndexes.ttl_blocks not in self.block_collection:
-            self.block_collection.create_index([('item_timestamp', 1)], expireAfterSeconds=TimeConstants.DAYS_30,
-                                               name=BlockchainETLIndexes.ttl_blocks)
-        if BlockchainETLIndexes.ttl_transactions not in self.transaction_collection:
-            self.transaction_collection.create_index([('item_timestamp', 1)], expireAfterSeconds=TimeConstants.DAYS_30,
-                                                     name=BlockchainETLIndexes.ttl_transactions)
-
-    def get_last_block_number(self, collector_id="streaming_collector"):
-        """Get the last block number collected by collector"""
-        last_block_number = self.collector_collection.find_one({"_id": collector_id})
-        return last_block_number["last_updated_at_block_number"]
-
-    def get_transactions_by_smart_contracts(self, from_block, to_block, contract_addresses: list):
+    # @sync_log_time_exe(tag=TimeExeTag.database)
+    def get_transactions_relate_to_address(self, address, from_block, to_block):
         filter_ = {
-            "$and": [
-                {"block_number": {"$gte": from_block, "$lte": to_block}},
-                {"to_address": {"$in": [address.lower() for address in contract_addresses]}},
-                {"receipt_status": 1}
+            "block_number": {"$gte": from_block, "$lt": to_block},
+            "$or": [
+                {"from_address": address},
+                {"to_address": address}
             ]
         }
-        projection = ['from_address', 'to_address', 'input', 'block_timestamp', 'hash']
+        projection = ['to_address', 'value', 'block_number', 'block_timestamp']
         cursor = self.transaction_collection.find(filter_, projection=projection).batch_size(10000)
         return cursor
 
@@ -76,28 +53,6 @@ class BlockchainETL:
         }
         projection = ['from_address']
         cursor = self.transaction_collection.find(filter_, projection=projection).batch_size(10000)
-        return cursor
-
-    def get_txs_in_range_timestamp(self, from_timestamp, to_timestamp):
-        filter_ = {
-            "$and": [
-                {"block_timestamp": {"$gte": from_timestamp, "$lte": to_timestamp}},
-                {"receipt_status": 1}
-            ]
-        }
-        projection = ['from_address', 'to_address', 'gas_price', 'receipt_gas_used', 'value']
-        cursor = self.transaction_collection.find(filter_, projection=projection).batch_size(10000)
-        return cursor
-
-    def get_sort_txs_in_range(self, start_timestamp, end_timestamp):
-        filter_ = {
-            'block_timestamp': {
-                "$gte": start_timestamp,
-                "$lte": end_timestamp
-            }
-        }
-        projection = ["from_address", "to_address", "input"]
-        cursor = self.transaction_collection.find(filter_, projection).batch_size(10000)
         return cursor
 
     def get_native_transfer_txs(self, from_block, to_block):
@@ -132,14 +87,6 @@ class BlockchainETL:
         }
         cursor = self.transaction_collection.find(filter_, projection).batch_size(10000)
         return cursor
-
-    def get_collector(self, collector_id):
-        try:
-            collector = self.collector_collection.find_one({'_id': collector_id})
-            return collector
-        except Exception as ex:
-            logger.exception(ex)
-        return None
 
     def get_number_calls_to_address(self, to_address, from_timestamp, to_timestamp):
         filter_ = {
