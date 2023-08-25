@@ -13,7 +13,7 @@ DECIMALS = 10**18
 logger = get_logger('Transactions Retriever')
 
 
-class TransactionsRetriever(BaseJob):
+class TransactionsExporter(BaseJob):
     def __init__(self, wallets_list: list, start_block: int, end_block: int, chain_id: str,
                  max_workers: int = 16, batch_size: int = 1000):
         self.wallets_list = wallets_list
@@ -51,11 +51,11 @@ if __name__ == '__main__':
     x_wallets = list(df['x'])
     end_block = 28705800
     start_block = 24385800
-    transactions_retriever = TransactionsRetriever(wallets_list=x_wallets,
-                                                   end_block=end_block,
-                                                   start_block=start_block,
-                                                   batch_size=1000,
-                                                   max_workers=16,
-                                                   chain_id='0x38')
+    transactions_retriever = TransactionsExporter(wallets_list=x_wallets,
+                                                  end_block=end_block,
+                                                  start_block=start_block,
+                                                  batch_size=1000,
+                                                  max_workers=16,
+                                                  chain_id='0x38')
 
     transactions_retriever.run()

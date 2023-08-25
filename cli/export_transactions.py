@@ -3,7 +3,7 @@ import pandas as pd
 
 from constants.network_constants import Chains
 from utils.logger_utils import get_logger
-from jobs.xtraneous.transactions_retriever import TransactionsRetriever
+from jobs.xtraneous.transactions_retriever import TransactionsExporter
 
 logger = get_logger('Export Transactions')
 
@@ -23,20 +23,20 @@ def export_transactions(chain, end_block, start_block, max_workers, batch_size):
 
     logger.info("Export x wallets")
     x_wallets = list(df['x'])
-    transactions_retriever = TransactionsRetriever(wallets_list=x_wallets,
-                                                   end_block=end_block,
-                                                   start_block=start_block,
-                                                   batch_size=batch_size,
-                                                   max_workers=max_workers,
-                                                   chain_id=chain_id)
+    transactions_retriever = TransactionsExporter(wallets_list=x_wallets,
+                                                  end_block=end_block,
+                                                  start_block=start_block,
+                                                  batch_size=batch_size,
+                                                  max_workers=max_workers,
+                                                  chain_id=chain_id)
     transactions_retriever.run()
 
     logger.info("Export y wallets")
     y_wallets = list(df['y'])
-    transactions_retriever = TransactionsRetriever(wallets_list=y_wallets,
-                                                   end_block=end_block,
-                                                   start_block=start_block,
-                                                   batch_size=batch_size,
-                                                   max_workers=max_workers,
-                                                   chain_id=chain_id)
+    transactions_retriever = TransactionsExporter(wallets_list=y_wallets,
+                                                  end_block=end_block,
+                                                  start_block=start_block,
+                                                  batch_size=batch_size,
+                                                  max_workers=max_workers,
+                                                  chain_id=chain_id)
     transactions_retriever.run()
