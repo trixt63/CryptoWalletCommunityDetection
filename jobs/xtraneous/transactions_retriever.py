@@ -44,18 +44,3 @@ class TransactionsExporter(BaseJob):
 
         progress = (self.end_block - from_block) / self.end_block
         print(f"Export from {from_block} to {to_block} / {self.end_block}. Estimated progress: {progress*100} %")
-
-
-if __name__ == '__main__':
-    df = pd.read_csv('../../data/0x38_wallets_pairs.csv')
-    x_wallets = list(df['x'])
-    end_block = 28705800
-    start_block = 24385800
-    transactions_retriever = TransactionsExporter(wallets_list=x_wallets,
-                                                  end_block=end_block,
-                                                  start_block=start_block,
-                                                  batch_size=1000,
-                                                  max_workers=16,
-                                                  chain_id='0x38')
-
-    transactions_retriever.run()
