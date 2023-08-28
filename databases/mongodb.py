@@ -121,6 +121,16 @@ class MongoDB:
         except Exception as ex:
             logger.exception(ex)
 
+    def update_transactions(self, chain_id, data: List[Dict]):
+        bulk_updates = [
+            UpdateOne({'_id': datum['_id']}, {'$set': datum}, upsert=True)
+            for datum in data
+        ]
+        try:
+            self._db[f"{chain_id}_transactions"].bulk_write(bulk_updates)
+        except Exception as ex:
+            logger.exception(ex)
+
     # the next 3 funcs are fore DEX-related threads
     def get_latest_pair_id(self, chain_id: str):
         filter_ = {'chainId': chain_id}

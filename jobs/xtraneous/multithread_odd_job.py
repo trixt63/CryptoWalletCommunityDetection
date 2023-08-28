@@ -1,6 +1,6 @@
 import os
 import sys
-sys.path.append(os.path.dirname(sys.path[0]))
+sys.path.append(os.path.dirname(os.path.dirname(sys.path[0])))
 
 from databases.mongodb import MongoDB
 from utils.logger_utils import get_logger

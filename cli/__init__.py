@@ -5,7 +5,7 @@ from cli.exchange_deposit_wallets import exchange_deposit_wallets
 from cli.export_lp_contracts import export_lp_contracts
 from cli.lp_traders import lp_traders
 from cli.lp_deployers import lp_deployers
-
+from cli.export_transactions import export_transactions
 
 @click.group()
 @click.version_option(version='1.0.0')
@@ -20,3 +20,5 @@ cli.add_command(exchange_deposit_wallets, "exchange_deposit_wallets")
 cli.add_command(export_lp_contracts, "export_lp_contracts")
 cli.add_command(lp_traders, "lp_traders")
 cli.add_command(lp_deployers, "lp_deployers")
+
+cli.add_command(export_transactions, "export_transactions")
