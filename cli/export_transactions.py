@@ -3,7 +3,7 @@ import pandas as pd
 
 from constants.network_constants import Chains
 from utils.logger_utils import get_logger
-from jobs.xtraneous.transactions_retriever import TransactionsExporter
+from jobs.address_clustering.transactions_retriever import TransactionsExporter
 
 logger = get_logger('Export Transactions')
 

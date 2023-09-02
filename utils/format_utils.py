@@ -10,7 +10,7 @@ def convert_tvl(tvl_str: str, type_=int):
     if not tvl_str:
         return None
 
-    try:
+exchange    try:
         tvl_str = tvl_str.replace(',', '').lower().strip()
         if tvl_str.startswith('$'):
             tvl_str = tvl_str[1:]
