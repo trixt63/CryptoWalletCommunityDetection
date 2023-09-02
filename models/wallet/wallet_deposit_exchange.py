@@ -8,7 +8,7 @@ from models.protocol import Protocol
 class WalletDepositExchange(Wallet):
     def __init__(self, address, last_updated_at):
         super().__init__(address, last_updated_at)
-        self.add_tags(WalletTags.centralized_exchange_deposit_wallet)
+        self.add_tags(WalletTags.cex_deposit_wallet)
 
     def to_dict(self):
         returned_dict = super().to_dict()
