@@ -1,7 +1,7 @@
 class WalletTags:
     # cex wallets
-    centralized_exchange_deposit_wallet = 'centralized_exchange_deposit_wallet'
-    centralized_exchange_wallet = 'centralized_exchange_wallet'
+    cex_deposit_wallet = 'cex_deposit_wallet'
+    cex_hot_wallet = 'cex_hot_wallet'
 
     # lending wallet
     lending_wallet = 'lending_wallet'
