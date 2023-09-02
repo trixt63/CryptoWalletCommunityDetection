@@ -1,6 +1,6 @@
 import os
 import sys
-sys.path.append(os.path.dirname(os.path.dirname(sys.path[0])))
+sys.path.append(os.path.dirname(sys.path[0]))
 
 from databases.mongodb import MongoDB
 from utils.logger_utils import get_logger
@@ -23,7 +23,6 @@ class MultithreadOddJob(BaseJob):
         )
 
     def _execute_batch(self, works):
-        # self.mongodb.fix_transfer_events(str(works[0]), str(works[-1]))
         logger.info(f"Add chainId for deposit wallet {works[0]} to {works[-1]}")
 
 

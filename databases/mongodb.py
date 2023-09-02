@@ -1,7 +1,7 @@
 from typing import List, Dict
 
 import pymongo
-from pymongo import MongoClient, UpdateOne
+from pymongo import MongoClient, UpdateOne, DeleteOne
 
 from config import MongoDBConfig
 # from constants.mongodb_constants import WALLETS_COL, CreatedPairEventsCollection
@@ -36,6 +36,8 @@ class MongoDB:
 
         self._groups_col = self._db['groups']
 
+        self._token_transfers = self._db['token_transfer']
+
         self._create_index()
 
     def _create_index(self):
@@ -46,11 +48,11 @@ class MongoDB:
     #   Aggregate groups  #
     #######################
 
-    def _get_min(self, col_name, field_name, filter_={}):
+    def get_min(self, col_name, field_name, filter_={}):
         cursor = self._db[col_name].find(filter_).sort(field_name, 1).limit(1)
         return cursor[0][field_name]
 
-    def _get_max(self, col_name, field_name, filter_={}):
+    def get_max(self, col_name, field_name, filter_={}):
         cursor = self._db[col_name].find(filter_).sort(field_name, -1).limit(1)
         return cursor[0][field_name]
 
@@ -242,32 +244,15 @@ class MongoDB:
         result = self._groups_col.aggregate(pipeline)
         return result
 
-    def fix_transfer_events(self, start_block: str, end_block: str):
-        old_transfer_events_col = self._db['transferEvents']
-        new_transfer_events_col = self._db['transferEvents_new']
-        new_transfer_events: List[Dict] = list()
+    def export_transfer_events(self, data: List[Dict]):
         bulk_operation = list()
 
-        cursor = old_transfer_events_col.find({'block_number': {'$gte': start_block,
-                                                                '$lte': end_block}})
-        for transfer_event in cursor:
-            chain_id = transfer_event['chainID']
-            from_address = transfer_event['from_address']
-            to_address = transfer_event['to_address']
-            id = f"{chain_id}_{from_address}_{to_address}",
-            new_transfer_event = {
-                # '_id': f"{chain_id}_{from_address}_{to_address}",
-                'chainId': chain_id,
-                'contractAddress': transfer_event['contract_address'],
-                'blockNumber': int(transfer_event['block_number']),
-                'fromAddress': transfer_event['from_address'],
-                'toAddress': transfer_event['to_address'],
-                'value': float(transfer_event['value']),
-            }
-            bulk_operation.append(UpdateOne(filter={'_id': id},
-                                            update={'$set': new_transfer_event},
+        for datum in data:
+            block_number = datum['block_number']
+            tx_hash = datum['transaction_hash']
+            log_index = datum['log_index']
+            bulk_operation.append(UpdateOne(filter={'_id': f"{block_number}_{tx_hash}_{log_index}"},
+                                            update={'$set': datum},
                                             upsert=True))
 
-        new_transfer_events_col.bulk_write(bulk_operation)
-
-
+        self._token_transfers.bulk_write(bulk_operation)
