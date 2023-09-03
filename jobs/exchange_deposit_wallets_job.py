@@ -121,7 +121,7 @@ class ExchangeDepositWalletsJob(BaseJob):
     def _export_wallets(self):
         """Export exchange deposit wallets with tag"""
         wallets = list(self._wallets_by_address.values())
-        wallets_data = [wallet.to_dict() for wallet in wallets]
+        wallets_data = [wallet.to_dict_single_chain() for wallet in wallets]
         for datum in wallets_data:
             datum['lastUpdatedAt'] = int(time.time())
-        self.exporter.update_wallets(wallets_data)
+        self.exporter.update_deposit_wallets_single_chain(wallets_data)

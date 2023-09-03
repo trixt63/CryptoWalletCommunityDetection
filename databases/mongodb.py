@@ -123,6 +123,36 @@ class MongoDB:
         except Exception as ex:
             logger.exception(ex)
 
+    def update_deposit_wallets_single_chain(self, wallets: List[dict]):
+        """For new schema of deposit wallets (with chainId only"""
+        try:
+            wallet_updates_bulk = []
+            for wallet in wallets:
+                wallet['_id'] = f"{wallet['chainId']}_{wallet['address']}"
+
+                # pop all basic information besides data about CEXs
+                wallet_base_data = {
+                    '_id': wallet.pop('_id'),
+                    'chainId': wallet.pop('chainId'),
+                    'address': wallet.pop('address'),
+                    'lastUpdatedAt': wallet.pop('lastUpdatedAt')
+                }
+                tags = wallet.pop('tags')
+                # update nested documents
+                _mongo_add_to_set_query = {"depositedExchanges": {"$each": wallet['depositedExchanges']},
+                                           "tags": {'$each': tags}}
+                # add update query into bulk
+                _filter = {'_id': wallet_base_data['_id']}
+                _update = {
+                    '$set': wallet_base_data,
+                    '$addToSet': _mongo_add_to_set_query
+                }
+                wallet_updates_bulk.append(UpdateOne(filter=_filter, update=_update, upsert=True))
+
+            self.wallets_col.bulk_write(wallet_updates_bulk)
+        except Exception as ex:
+            logger.exception(ex)
+
     def update_transactions(self, chain_id, data: List[Dict]):
         bulk_updates = [
             UpdateOne({'_id': datum['_id']}, {'$set': datum}, upsert=True)
