@@ -19,3 +19,23 @@ class WalletDepositExchange(Wallet):
         }
 
         return returned_dict
+
+    def to_dict_single_chain(self):
+        returned_dict = super().to_dict()
+        _exchanges = returned_dict.pop('protocols')
+
+        _chains = set()  # should have only one element
+        returned_dict['depositedExchanges'] = set()
+        for cex_id, cex_deployments in _exchanges.items():
+            returned_dict['depositedExchanges'].add(cex_id)
+            _chains.add(cex_deployments[0]['chainId'])
+
+        try:
+            assert len(_chains) == 1
+        except AssertionError:
+            raise AssertionError("'depositWallets' should only contain data on 1 chain")
+
+        returned_dict['depositedExchanges'] = list(returned_dict['depositedExchanges'])
+        returned_dict['chainId'] = _chains.pop()
+
+        return returned_dict
