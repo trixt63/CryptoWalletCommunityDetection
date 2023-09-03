@@ -1,6 +1,6 @@
 import gc
 import time
-from typing import Dict
+from typing import Dict, Set
 
 from multithread_processing.base_job import BaseJob
 
@@ -48,10 +48,11 @@ class ExchangeDepositWalletsJob(BaseJob):
 
         self.exporter = exporter
 
-        self.exchange_wallets = exchange_wallets
         self.wallets_groupby_exchanges = dict()
+        self.all_hot_wallets = set()
         for wallet_addr, exchange_id in exchange_wallets.items():
             self.wallets_groupby_exchanges.setdefault(exchange_id, []).append(wallet_addr)
+            self.all_hot_wallets.add(wallet_addr)
 
         self.chain_id = chain_id
 
@@ -104,14 +105,14 @@ class ExchangeDepositWalletsJob(BaseJob):
 
             for item in items:
                 from_address = item['from_address']
+                if from_address in self.all_hot_wallets:
+                    continue
                 if from_address in self._wallets_by_address:
-                    # self._wallets_by_address[from_address].deposited_exchanges.add(exchange_id)
                     self._wallets_by_address[from_address].add_protocol(protocol_id=exchange_id,
                                                                         address=from_address,
                                                                         chain_id=self.chain_id)
                 else:
                     new_deposit_wallet = WalletDepositExchange(address=from_address, last_updated_at=int(time.time()))
-                    # new_deposit_wallet.add_tags(WalletTags.centralized_exchange_deposit_wallet)
                     self._wallets_by_address[from_address] = new_deposit_wallet
                     self._wallets_by_address[from_address].add_protocol(protocol_id=exchange_id,
                                                                         address=from_address,

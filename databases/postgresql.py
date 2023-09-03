@@ -23,7 +23,7 @@ class PostgresDB:
         self.session.close()
         pass
 
-    # @sync_log_time_exe(tag=TimeExeTag.database)
+    @sync_log_time_exe(tag=TimeExeTag.database)
     def get_event_transfer_by_to_addresses(self, to_addresses, from_block, to_block):
         query = f"""
             SELECT from_address 
