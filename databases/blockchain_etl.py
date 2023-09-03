@@ -29,7 +29,7 @@ class BlockchainETL:
         self.transaction_collection = self.mongo_db[BlockchainETLCollections.transactions]
         self.collector_collection = self.mongo_db[BlockchainETLCollections.collectors]
 
-    # @sync_log_time_exe(tag=TimeExeTag.database)
+    @sync_log_time_exe(tag=TimeExeTag.database)
     def get_transactions_relate_to_address(self, address, from_block, to_block):
         filter_ = {
             "block_number": {"$gte": from_block, "$lt": to_block},
@@ -52,7 +52,7 @@ class BlockchainETL:
         cursor = self.transaction_collection.find(filter_).batch_size(1000)
         return cursor
 
-    # @sync_log_time_exe(tag=TimeExeTag.database)
+    @sync_log_time_exe(tag=TimeExeTag.database)
     def get_transactions_to_addresses(self, to_addresses, from_block, to_block):
         """For getting transactions to a list addresses (such as hot wallets)"""
         filter_ = {
