@@ -1,6 +1,5 @@
 # CryptoWalletCommunityDetection
-My would-be graduation project
-
+Data pipeline for the Cryptowallets communities project.
 ## Pipelines
 ### 1. Lending wallets
 - Get wallets with lending activities.
@@ -14,3 +13,7 @@ List of platforms is in ```artifacts/centralized_exchange_addresses```
   - PancakeSwap from chain BSC
   - SpookySwap from chain Fantom
   - Uniswap V2 from chain Ethereum
+
+## Related repositories:
+- [Backend]([url](https://github.com/trixt63/address-clustering-demo))
+- [Frontend]([url](https://github.com/trixt63/address-clustering-frontend))
